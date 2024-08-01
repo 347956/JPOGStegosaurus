@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1000757932
+CRC: 575105827
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5cb463759c1c8240bf7a72d2388c5757
+    Hash: 47ff8916a1c183e6aba6c1a641ab4e96
   TypeTreeHash:
     serializedVersion: 2
     Hash: fad65fd34c4a2e520fe7f7fd5b4c5542
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 5cb463759c1c8240bf7a72d2388c5757
+    Hash: 47ff8916a1c183e6aba6c1a641ab4e96
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -91,4 +91,5 @@ Assets:
 - Assets/ModAssets/JPOGStegosaurus/Materials/MapDotGreen.mat
 - Assets/ModAssets/JPOGStegosaurus/JPOGStegosaurus Animator.controller
 - Assets/ModAssets/JPOGStegosaurus/Bestiary/JPOGStegosaurusTN.asset
+- Assets/ModAssets/JPOGStegosaurus/Materials/steg.mat
 Dependencies: []
