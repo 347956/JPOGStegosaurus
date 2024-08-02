@@ -17,6 +17,8 @@ namespace JPOGStegosaurus.Configuration {
 
         public ConfigEntry<int> MaxIrritationLevel;
         public ConfigEntry<int> IntervalIrrtationDecrement;
+        public ConfigEntry<int> IntervalIrrtationIncrement;
+
         public ConfigEntry<int> DecreaseAmountIrritation;
         public ConfigEntry<int> IncreaseAmountIrritation;
 
@@ -41,6 +43,10 @@ namespace JPOGStegosaurus.Configuration {
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
 
             IntervalIrrtationDecrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Decrement", 5,
+                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
+                "Goes up from 0, lower is more rare, 100 and up is very common.");
+
+            IntervalIrrtationIncrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Decrement", 2,
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
 
