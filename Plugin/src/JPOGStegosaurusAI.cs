@@ -46,7 +46,7 @@ namespace JPOGStegosaurus {
         float irritationDecrementAmount;
         float irritationDecrementinterval;
         float lastIrritationDecreaseTime;
-        private State previousState;
+        private State previousState = State.Idling;
         private bool inRandomIdleAnimation;
         private bool isDoneIdling = false;
         private float timeToIdle = 10f;
@@ -278,7 +278,7 @@ namespace JPOGStegosaurus {
                 LogIfDebugBuild($"JPOGStegosaurus: Checking Aggro Area for players");
                 CheckForPlayersInAggroAreaClientRpc();
                 LogIfDebugBuild($"JPOGStegosaurus: Checking Back Attack Area for players");
-                CheckForPlayersInAttackAreaBackClientRpc();
+                CheckForPlayersInAttackAreaBackServerRpc();
                 LogIfDebugBuild($"JPOGStegosaurus: Checking Front Attack Area for players");
                 CheckForPlayersInAttackAreaFrontClientRpc();
                 yield return new WaitForSeconds(1.0f);
@@ -347,10 +347,10 @@ namespace JPOGStegosaurus {
                     PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
                     if (playerControllerB != null && irritationLevel != irritationMaxLevel){
                         LogIfDebugBuild($"JPOGStegosaurus: player: [{playerControllerB.actualClientId}] was in the Aggro Area ");
-                        IncreaseIrritationClientRpc();
+                        //IncreaseIrritationClientRpc();
                         if(irritationLevel == irritationMaxLevel)
                         {
-                            targetPlayer = playerControllerB;
+                            //targetPlayer = playerControllerB;
                             break;
                         }
                     }
@@ -372,7 +372,7 @@ namespace JPOGStegosaurus {
                     if (playerControllerB != null && irritationLevel != irritationMaxLevel)
                     {
                         LogIfDebugBuild($"JPOGStegosaurus: player: [{playerControllerB.actualClientId}] was in Frontal Attack Area ");
-                        IncreaseIrritationClientRpc();
+                        //IncreaseIrritationClientRpc();
 
                     }
 
@@ -380,13 +380,26 @@ namespace JPOGStegosaurus {
             }
         }
 
-        [ClientRpc]
-        private void CheckForPlayersInAttackAreaBackClientRpc()
+
+        [ServerRpc(RequireOwnership = false)]
+        private void CheckForPlayersInAttackAreaBackServerRpc()
         {
             int playerLayer = 1 << 3;
             Collider[] hitColliders = Physics.OverlapBox(attackAreaBack.position, attackAreaBack.localScale, Quaternion.identity, playerLayer);
             if (hitColliders.Length > 0)
             {
+                foreach (var player in hitColliders)
+                {
+                    PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(player);
+                    if (playerControllerB != null && irritationLevel != irritationMaxLevel)
+                    {
+                        LogIfDebugBuild($"JPOGStegosaurus: player: [{playerControllerB.actualClientId}] was in Back Attack Area ");
+                        //IncreaseIrritationClientRpc();
+
+                    }
+
+                }
+                LogIfDebugBuild($"JPOGStegosaurus: Calling Coroutine to begin tail attack!");
                 StartCoroutine(BeginTailAttack());
             }
         }
@@ -396,9 +409,10 @@ namespace JPOGStegosaurus {
         {
             inTailAttack = true;
             StartCoroutine(BeginTailAttackAnimation());
+            yield return new WaitForSeconds(0.2f);
             while (inTailAttack)
             {
-                CheckIfTailAttackHitPlayersClientRpc();
+                CheckIfTailAttackHitPlayersServerRpc();
                 yield return null;
             }
            yield break;
@@ -412,8 +426,8 @@ namespace JPOGStegosaurus {
             yield break;
         }
 
-        [ClientRpc]
-        private void CheckIfTailAttackHitPlayersClientRpc()
+        [ServerRpc(RequireOwnership = false)]
+        private void CheckIfTailAttackHitPlayersServerRpc()
         {
             bool hitPlayer = false;
             int playerLayer = 1 << 3;
@@ -447,6 +461,7 @@ namespace JPOGStegosaurus {
             if (hitPlayer)
             {
                 LogIfDebugBuild($"JPOGStegosaurus: hitPlayer = [{hitPlayer}] calling to kill all hit players");
+                KillPlayersByTailClientRpc();
             }
             else
             {
@@ -496,7 +511,6 @@ namespace JPOGStegosaurus {
                     }
                 }
             }
-
         }
 
         [ClientRpc]
@@ -649,7 +663,7 @@ namespace JPOGStegosaurus {
         private void AssignConfigVariables()
         {
             irritationMaxLevel = PluginConfig.Instance.MaxIrritationLevel.Value;
-            lastIrritationDecreaseTime = PluginConfig.Instance.IntervalIrrtationDecrement.Value;
+            irritationDecrementinterval = PluginConfig.Instance.IntervalIrrtationDecrement.Value;
             irritationIncrementAmount = PluginConfig.Instance.IncreaseAmountIrritation.Value;
             irritationDecrementAmount = PluginConfig.Instance.DecreaseAmountIrritation.Value;
         }
@@ -770,6 +784,13 @@ namespace JPOGStegosaurus {
             {
                 LogIfDebugBuild($"JPOGStegosaurus: failed to add dead body [{killedPlayerBody.playerObjectId}] to spiked bodies");
             }
+        }
+
+        private void PlayAudioClip(AudioClip audioClip)
+        {
+            LogIfDebugBuild("JPOGStegosaurus: Playing audio clip through CreatureVoice");
+            creatureVoice.PlayOneShot(audioClip);
+            WalkieTalkie.TransmitOneShotAudio(creatureVoice, audioClip);
         }
     }
 }
