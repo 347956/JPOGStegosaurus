@@ -66,7 +66,15 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.31516588
+        functionName: PlayAudioClip
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 5072c2f802dc1e846b61dc3d2e37d565,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -95,7 +103,15 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.21800947
+        functionName: PlayAudioClip
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 5072c2f802dc1e846b61dc3d2e37d565,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -965,7 +981,39 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.05687204
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 704bc6d614408bb468c7d9d5f59dbee2,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.43838865
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 6455e6298c4acfb4caf540d62b502b13,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.60900474
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 704bc6d614408bb468c7d9d5f59dbee2,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.907583
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 86fd82cf47298664596f790e66610b9f,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -994,7 +1042,15 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.037914693
+        functionName: PlayAudioClip
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 2d6a45b888c3167459c2ab46fe08fa58,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -1168,7 +1224,39 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.5521739
+        functionName: PlayAudioClip
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 4cc7d9ea81ddf824ca7c67d805744e04,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.030805686
+        functionName: PlayAudioClip
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 36ddd9be2b126bc41aa3be258cbfc3ce,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.6469194
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 86fd82cf47298664596f790e66610b9f,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.67535543
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 704bc6d614408bb468c7d9d5f59dbee2,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -1260,6 +1348,30 @@ ModelImporter:
         functionName: PlayAudioClip
         data: 
         objectReferenceParameter: {fileID: 8300000, guid: 4cc7d9ea81ddf824ca7c67d805744e04,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.25829384
+        functionName: PlayTailSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 7949d07958c330544b901d82919356bc,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.4478673
+        functionName: PlayTailSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 3d1e4058855c6444bad68e1936829cc4,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.6350711
+        functionName: PlayTailSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 7949d07958c330544b901d82919356bc,
           type: 3}
         floatParameter: 0
         intParameter: 0
@@ -1524,7 +1636,39 @@ ModelImporter:
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
       curves: []
-      events: []
+      events:
+      - time: 0.099121705
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 6455e6298c4acfb4caf540d62b502b13,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.3425345
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 704bc6d614408bb468c7d9d5f59dbee2,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.5711576
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 6455e6298c4acfb4caf540d62b502b13,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.8720201
+        functionName: PlayAudioSFX
+        data: 
+        objectReferenceParameter: {fileID: 8300000, guid: 86fd82cf47298664596f790e66610b9f,
+          type: 3}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}

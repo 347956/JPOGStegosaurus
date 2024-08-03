@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 1374136241
+CRC: 3786451378
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 43a15bf118a5812d0e204e253d4468e8
+    Hash: 1bb27321a99327c4ef0cc815eaa1629a
   TypeTreeHash:
     serializedVersion: 2
-    Hash: fad65fd34c4a2e520fe7f7fd5b4c5542
+    Hash: 5e9f3c1d8ca0f689f2bae3e9266f9f76
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 43a15bf118a5812d0e204e253d4468e8
+    Hash: 1bb27321a99327c4ef0cc815eaa1629a
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -84,12 +84,20 @@ Assets:
 - Assets/ModAssets/JPOGStegosaurus/JPOGStegosaurus.asset
 - Assets/ModAssets/JPOGStegosaurus/JPOGStegosaurusOBJ.prefab
 - Assets/ModAssets/JPOGStegosaurus/Models/JPOGStegosaurus.fbx
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoSwingAttack02.mp3
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoSwingAttack01.mp3
 - Assets/ModAssets/JPOGStegosaurus/Bestiary/JPOGStegosaurusTK.asset
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoFootstep01.mp3
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoFootstep03.mp3
 - Assets/ModAssets/JPOGStegosaurus/Audio/Stegchlng.wav
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoFootstep02.mp3
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoHurt02.mp3
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoPreStomp01.mp3
 - Assets/ModAssets/JPOGStegosaurus/Materials/Steg.bmp
 - Assets/ModAssets/JPOGStegosaurus/Audio/Stegcall01.wav
 - Assets/ModAssets/JPOGStegosaurus/Materials/MapDotGreen.mat
 - Assets/ModAssets/JPOGStegosaurus/JPOGStegosaurus Animator.controller
+- Assets/ModAssets/JPOGStegosaurus/Audio/StegoHurt01.mp3
 - Assets/ModAssets/JPOGStegosaurus/Bestiary/JPOGStegosaurusTN.asset
 - Assets/ModAssets/JPOGStegosaurus/Materials/steg.mat
 Dependencies: []

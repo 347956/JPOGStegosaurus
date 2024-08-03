@@ -18,9 +18,11 @@ namespace JPOGStegosaurus.Configuration {
         public ConfigEntry<int> MaxIrritationLevel;
         public ConfigEntry<int> IntervalIrrtationDecrement;
         public ConfigEntry<int> IntervalIrrtationIncrement;
+        public ConfigEntry<int> IntervalIdling;
 
         public ConfigEntry<int> DecreaseAmountIrritation;
         public ConfigEntry<int> IncreaseAmountIrritation;
+
 
         private const string CATEGORY_GENERAL = "1. General";
         private const string CATEGORY_BEHAVIOR = "2. Behavior";
@@ -50,6 +52,10 @@ namespace JPOGStegosaurus.Configuration {
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
 
+            IntervalIdling = IntervalIrrtationIncrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Idling", 30,
+                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
+                "Goes up from 0, lower is more rare, 100 and up is very common.");
+
             MaxIrritationLevel = cfg.Bind(CATEGORY_BEHAVIOR, "Max Irritation Level", 100,
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
@@ -58,7 +64,7 @@ namespace JPOGStegosaurus.Configuration {
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
 
-            IncreaseAmountIrritation= cfg.Bind(CATEGORY_BEHAVIOR, "Increase Amount Irritation", 20,
+            IncreaseAmountIrritation= cfg.Bind(CATEGORY_BEHAVIOR, "Increase Amount Irritation", 10,
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
 
