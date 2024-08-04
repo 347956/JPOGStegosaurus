@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 3786451378
+CRC: 624690204
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 1bb27321a99327c4ef0cc815eaa1629a
+    Hash: e55188cd60f111203ed97c9cf77869a5
   TypeTreeHash:
     serializedVersion: 2
     Hash: 5e9f3c1d8ca0f689f2bae3e9266f9f76
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 1bb27321a99327c4ef0cc815eaa1629a
+    Hash: e55188cd60f111203ed97c9cf77869a5
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -99,5 +99,6 @@ Assets:
 - Assets/ModAssets/JPOGStegosaurus/JPOGStegosaurus Animator.controller
 - Assets/ModAssets/JPOGStegosaurus/Audio/StegoHurt01.mp3
 - Assets/ModAssets/JPOGStegosaurus/Bestiary/JPOGStegosaurusTN.asset
+- Assets/ModAssets/JPOGStegosaurus/Animation/Steg_hi_Lcarn_statkFIX.anim
 - Assets/ModAssets/JPOGStegosaurus/Materials/steg.mat
 Dependencies: []

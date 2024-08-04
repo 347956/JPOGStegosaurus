@@ -19,7 +19,7 @@ namespace JPOGStegosaurus {
     {
         // We set these in our Asset Bundle, so we can disable warning CS0649:
         // Field 'field' is never assigned to, and will always have its default value 'value'
-        #pragma warning disable 0649
+#pragma warning disable 0649
         public Transform turnCompass = null!;
         public Transform aggroArea = null!;
         private List<DeadBodyInfo> spikedBodies = new List<DeadBodyInfo>();
@@ -34,8 +34,8 @@ namespace JPOGStegosaurus {
 
         public Transform attackAreaFront = null!;
         public Transform attackAreaBack = null!;
-        
-        #pragma warning restore 0649
+
+#pragma warning restore 0649
         float timeSinceHittingLocalPlayer;
         float timeSinceNewRandPos;
         Vector3 positionRandomness;
@@ -67,6 +67,9 @@ namespace JPOGStegosaurus {
         private bool inSpecialTailAttack;
         private float stopChaseHeight = 7f;
         private bool isStunned = false;
+        private bool readyToChaseFromSpecialAttack = false;
+        private Quaternion originalRotation;
+        private bool readyToChaseFromStunned;
 
         enum State {
             Roaming,
@@ -74,6 +77,7 @@ namespace JPOGStegosaurus {
             ChasingTarget,
             RunningAway,
             Stunned,
+            SpecialAttack,
             Idling
         }
 
@@ -116,28 +120,21 @@ namespace JPOGStegosaurus {
             }
             if (enemyHP <= 0 && !isEnemyDead)
             {
-                agent.speed = 0;
-                StopCoroutine(checkAggroAndAttackAreas());
-                StopAllCoroutines();
-                StopAllCoroutines();
-                SetWalkingAnimtionServerRpc(agent.speed);
-                KillEnemyOnOwnerClient();
                 return;
             }
 
             timeSinceHittingLocalPlayer += Time.deltaTime;
             timeSinceNewRandPos += Time.deltaTime;
- 
-            
+
+
             var state = currentBehaviourStateIndex;
             if (timeSinceNewRandPos >= movementCheckInterval && !inStunAnimation)
             {
                 timeSinceNewRandPos = 0f;
                 CheckMovementServerRpc();
             }
-            if (targetPlayer != null && (state == (int)State.AttackEnemy || state == (int)State.ChasingTarget || state == (int)State.Stunned)){
-                turnCompass.LookAt(targetPlayer.gameplayCamera.transform.position);
-                transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(new Vector3(0f, turnCompass.eulerAngles.y, 0f)), 4f * Time.deltaTime);
+            if (targetPlayer != null && (state == (int)State.AttackEnemy || state == (int)State.ChasingTarget || state == (int)State.Stunned)) {
+                LookAtTargetServerRpc();
             }
             if (stunNormalizedTimer > 0f)
             {
@@ -177,33 +174,34 @@ namespace JPOGStegosaurus {
         }
 
         public override void DoAIInterval() {
-            
+
             base.DoAIInterval();
 
             if (isEnemyDead || StartOfRound.Instance.allPlayersDead) {
                 return;
             };
 
-            switch(currentBehaviourStateIndex) {
+            switch (currentBehaviourStateIndex) {
                 case (int)State.Roaming:
                     StateChangeHelperServerRpc(State.Roaming);
-                    if(irritationLevel == irritationMaxLevel)
+                    if (irritationLevel == irritationMaxLevel)
                     {
                         SwitchToBehaviourServerRpc((int)State.ChasingTarget);
+                        break;
                     }
                     //CheckIdleTimeServerRpc(); //WIP
 
-/*                    if (FoundClosestPlayerInRange(25f, 3f)){
-                        LogIfDebugBuild("Start Target Player");
-                        StopSearch(currentSearch);
-                        SwitchToBehaviourClientRpc((int)State.AttackEnemy);
-                    }*/
+                    /*                    if (FoundClosestPlayerInRange(25f, 3f)){
+                                            LogIfDebugBuild("Start Target Player");
+                                            StopSearch(currentSearch);
+                                            SwitchToBehaviourClientRpc((int)State.AttackEnemy);
+                                        }*/
                     break;
 
                 case (int)State.AttackEnemy:
                     StateChangeHelperServerRpc(State.AttackEnemy);
                     // Keep targeting closest player, unless they are over 20 units away and we can't see them.
-                    if (!TargetClosestPlayerInAnyCase() || (Vector3.Distance(transform.position, targetPlayer.transform.position) > 20 && !CheckLineOfSightForPosition(targetPlayer.transform.position))){
+                    if (!TargetClosestPlayerInAnyCase() || (Vector3.Distance(transform.position, targetPlayer.transform.position) > 20 && !CheckLineOfSightForPosition(targetPlayer.transform.position))) {
                         LogIfDebugBuild("JPOGStegosaurus: Stop Target Player");
                         StartSearch(transform.position);
                         SwitchToBehaviourClientRpc((int)State.Roaming);
@@ -215,12 +213,12 @@ namespace JPOGStegosaurus {
                 case (int)State.ChasingTarget:
                     StateChangeHelperServerRpc(State.ChasingTarget);
                     ChasePlayerServerRpc();
-                    if(irritationLevel >= 20)
+                    if (irritationLevel >= 20)
                     {
                         DecreaseIrritationServerRpc();
                         break;
                     }
-                    else if(irritationLevel < 20)
+                    else if (irritationLevel < 20)
                     {
                         LogIfDebugBuild("JPOGStegosaurus: Irritation Level below 20, stopping chase");
                         SwitchToBehaviourClientRpc((int)State.Roaming);
@@ -235,7 +233,7 @@ namespace JPOGStegosaurus {
 
                 case (int)State.Idling:
                     StateChangeHelperServerRpc(State.Idling);
-                    if(!inRandomIdleAnimation)
+                    if (!inRandomIdleAnimation)
                     {
                         LogIfDebugBuild("JPOGStegosaurus: playing random idle animation");
                         PlayRandomIdleAnimationClientRpc();
@@ -259,16 +257,44 @@ namespace JPOGStegosaurus {
                     StateChangeHelperServerRpc(State.Stunned);
                     if (!isStunned)
                     {
-                        StopCoroutine(BeginStunAnimation());
-                        inStunAnimation = false;
+                        LogIfDebugBuild("JPOGStegosaurus: Is No longer stunned attempting to chase the target!");
                         if (targetPlayer != null)
                         {
                             SwitchToBehaviourServerRpc((int)State.ChasingTarget);
+                            break;
                         }
                         else
                         {
                             irritationLevel = irritationMaxLevel / 100 * 50;
                             SwitchToBehaviourServerRpc((int)State.Roaming);
+                            break;
+                        }
+                    }
+                    if(isStunned && !inStunAnimation)
+                    {
+                        LogIfDebugBuild("JPOGStegosaurus: Is stunned and not in a stun animation, begining stun animation Coroutine");
+                        PlayStunnedAnimationServerRpc();
+                    }
+                    break;
+
+                case (int)State.SpecialAttack:
+                    StateChangeHelperServerRpc(State.SpecialAttack);
+                    if (readyToChaseFromSpecialAttack)
+                    {
+                        LogIfDebugBuild($"JPOGStegosaurus: special attack is done = [{readyToChaseFromSpecialAttack}] checking if the target is still !null ");
+                        if (targetPlayer != null)
+                        {
+                            readyToChaseFromSpecialAttack = false;
+                            SwitchToBehaviourServerRpc((int)State.ChasingTarget);
+                            break;
+                        }
+                    }
+                    if (!CheckIfInAttackAnimation())
+                    {
+                        LogIfDebugBuild($"JPOGStegosaurus: special attack is done = [{readyToChaseFromSpecialAttack}] starting the special attack");
+                        if (targetPlayer != null)
+                        {
+                            PerformSpecialTailAttackServerRpc();
                         }
                     }
                     break;
@@ -277,7 +303,7 @@ namespace JPOGStegosaurus {
                     LogIfDebugBuild("JPOGStegosaurus: This Behavior State doesn't exist!");
                     break;
             }
-        }       
+        }
 
 
         [ServerRpc(RequireOwnership = false)]
@@ -297,7 +323,7 @@ namespace JPOGStegosaurus {
             if (targetPlayer == null) // Check for a new target if no valid target exists
             {
                 foundNewTarget = TargetClosestPlayer(1.5f, true, 100f);
-                if(targetPlayer != null)
+                if (targetPlayer != null)
                 {
                     if (foundNewTarget && CheckIfPlayerIsTargetable(targetPlayer))
                     {
@@ -312,7 +338,7 @@ namespace JPOGStegosaurus {
             if (targetPlayer != null)
             {
                 ChasePlayerClientRpc(targetPlayer.transform.position); // Notify clients to chase player
-                LogIfDebugBuild($"Chasing player: {targetPlayer.name} at position {targetPlayer.transform.position}");
+                //LogIfDebugBuild($"Chasing player: {targetPlayer.name} at position {targetPlayer.transform.position}");
             }
             else if (!foundNewTarget)
             {
@@ -331,7 +357,7 @@ namespace JPOGStegosaurus {
         private bool CheckIfPlayerIsTargetable(PlayerControllerB player)
         {
             bool playerIsTargetable = false;
-            if(player != null)
+            if (player != null)
             {
                 if (player.isInHangarShipRoom || player.isClimbingLadder)
                 {
@@ -340,7 +366,7 @@ namespace JPOGStegosaurus {
                 }
                 else
                 {
-                    LogIfDebugBuild($"JPOGStegosaurus: player[{player.actualClientId}] is targetable");
+                    //LogIfDebugBuild($"JPOGStegosaurus: player[{player.actualClientId}] is targetable");
                     playerIsTargetable = true;
                 }
             }
@@ -367,14 +393,14 @@ namespace JPOGStegosaurus {
 
         bool FoundClosestPlayerInRange(float range, float senseRange) {
             TargetClosestPlayer(bufferDistance: 1.5f, requireLineOfSight: true);
-            if(targetPlayer == null){
+            if (targetPlayer == null) {
                 // Couldn't see a player, so we check if a player is in sensing distance instead
                 TargetClosestPlayer(bufferDistance: 1.5f, requireLineOfSight: false);
                 range = senseRange;
             }
             return targetPlayer != null && Vector3.Distance(transform.position, targetPlayer.transform.position) < range;
         }
-        
+
         bool TargetClosestPlayerInAnyCase() {
             mostOptimalDistance = 2000f;
             targetPlayer = null;
@@ -387,7 +413,7 @@ namespace JPOGStegosaurus {
                     targetPlayer = StartOfRound.Instance.allPlayerScripts[i];
                 }
             }
-            if(targetPlayer == null) return false;
+            if (targetPlayer == null) return false;
             return true;
         }
 
@@ -398,13 +424,13 @@ namespace JPOGStegosaurus {
             if (targetPlayer == null || !IsOwner) {
                 return;
             }
-            if(timeSinceNewRandPos > 0.7f){
+            if (timeSinceNewRandPos > 0.7f) {
                 timeSinceNewRandPos = 0;
-                if(enemyRandom.Next(0, 5) == 0){
+                if (enemyRandom.Next(0, 5) == 0) {
                     // Attack
                     StartCoroutine(SwingAttack());
                 }
-                else{
+                else {
                     // Go in front of player
                     positionRandomness = new Vector3(enemyRandom.Next(-2, 2), 0, enemyRandom.Next(-2, 2));
                     StalkPos = targetPlayer.transform.position - Vector3.Scale(new Vector3(-5, 0, -5), targetPlayer.transform.forward) + positionRandomness;
@@ -434,14 +460,14 @@ namespace JPOGStegosaurus {
             StalkPos = targetPlayer.transform.position;
             SetDestinationToPosition(StalkPos);
             yield return new WaitForSeconds(0.5f);
-            if(isEnemyDead){
+            if (isEnemyDead) {
                 yield break;
             }
             DoAnimationClientRpc("swingAttack");
             yield return new WaitForSeconds(0.35f);
             SwingAttackHitClientRpc();
             // In case the player has already gone away, we just yield break (basically same as return, but for IEnumerator)
-            if(currentBehaviourStateIndex != (int)State.AttackEnemy){
+            if (currentBehaviourStateIndex != (int)State.AttackEnemy) {
                 yield break;
             }
             SwitchToBehaviourClientRpc((int)State.AttackEnemy);
@@ -454,7 +480,7 @@ namespace JPOGStegosaurus {
             PlayerControllerB playerControllerB = MeetsStandardPlayerCollisionConditions(other);
             if (playerControllerB != null)
             {
-                LogIfDebugBuild("JPOGStegosaurus Collision with Player!");
+                LogIfDebugBuild("JPOGStegosaurus: Collision with Player!");
                 timeSinceHittingLocalPlayer = 0f;
                 playerControllerB.DamagePlayer(20);
             }
@@ -462,7 +488,7 @@ namespace JPOGStegosaurus {
 
         public override void HitEnemy(int force = 1, PlayerControllerB? playerWhoHit = null, bool playHitSFX = false, int hitID = -1) {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
-            if(isEnemyDead){
+            if (isEnemyDead) {
                 return;
             }
             enemyHP -= force;
@@ -474,20 +500,52 @@ namespace JPOGStegosaurus {
 
                     StopCoroutine(checkAggroAndAttackAreas());
                     // We need to stop our search coroutine, because the game does not do that by default.
+                    agent.speed = 0;
+                    SetWalkingAnimtionClientRpc(agent.speed);
+                    SetWalkingAnimtionServerRpc(agent.speed);
+                    DoAnimationClientRpc("stopTail");
                     StopCoroutine(searchCoroutine);
                     KillEnemyOnOwnerClient();
                 }
-                if (enemyHP > 0) {
-                    if (playerWhoHit != null)
-                    {
-                        irritationLevel = irritationMaxLevel;
-                        targetPlayer = playerWhoHit;
-                        turnCompass.LookAt(targetPlayer.gameplayCamera.transform.position);
-                        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(new Vector3(0f, turnCompass.eulerAngles.y, 0f)), 4f * Time.deltaTime);
-                        StartCoroutine(BeginSpecialTailAttack());
-                        SwitchToBehaviourServerRpc((int)State.ChasingTarget);
-                    }
+                else if (playerWhoHit != null && currentBehaviourStateIndex != (int)State.ChasingTarget)
+                {
+                    irritationLevel = irritationMaxLevel;
+                    targetPlayer = playerWhoHit;
+                    SwitchToBehaviourServerRpc((int)State.SpecialAttack);
                 }
+            }
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void PerformSpecialTailAttackServerRpc()
+        {
+            readyToChaseFromSpecialAttack = false;
+            originalRotation = transform.rotation;
+            LookAtTargetClientRpc();
+            StartCoroutine(BeginSpecialTailAttack());
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        public void LookAtTargetServerRpc()
+        {
+            LookAtTargetClientRpc();
+        }
+
+
+        [ClientRpc]
+        public void LookAtTargetClientRpc()
+        {
+            if (targetPlayer != null)
+            {
+                Vector3 targetPosition = targetPlayer.gameplayCamera.transform.position;
+                Vector3 directionToTarget = targetPosition - transform.position;
+                directionToTarget.y = 0;
+
+                Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
+                transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, 4f * Time.deltaTime);
+
+                //LogIfDebugBuild("JPOGStegosaurus: facing target player!");
+                turnCompass.LookAt(targetPlayer.gameplayCamera.transform.position);
             }
         }
 
@@ -612,7 +670,7 @@ namespace JPOGStegosaurus {
             }
             else
             {
-                LogIfDebugBuild($"JPOGStegosaurus: No players have been hit");
+                //LogIfDebugBuild($"JPOGStegosaurus: No players have been hit");
             }
         }
 
@@ -686,13 +744,17 @@ namespace JPOGStegosaurus {
                     yield return null;                    
                 }
             }
+             //transform.rotation = originalRotation;
+            readyToChaseFromSpecialAttack = true;
             yield break;
         }
 
         IEnumerator BeginSpecialTailAnimation()
         {
+            LogIfDebugBuild("JPOGStegosaurus: Beginning Special tail attack animation!");
             DoAnimationClientRpc("tailFrontalAttack");
-            yield return new WaitForSeconds(2.7f);
+            yield return new WaitForSeconds(5.7f);
+            LogIfDebugBuild("JPOGStegosaurus: Special tail attack complete!");
             inSpecialTailAttack = false;
             yield break;
         }
@@ -762,7 +824,7 @@ namespace JPOGStegosaurus {
             }
             else
             {
-                LogIfDebugBuild($"JPOGStegosaurus: No players have been hit");
+                //LogIfDebugBuild($"JPOGStegosaurus: No players have been hit");
             }
         }
 
@@ -933,6 +995,7 @@ namespace JPOGStegosaurus {
         [ServerRpc(RequireOwnership = false)]
         private void StateChangeHelperServerRpc(State state)
         {
+            //LogIfDebugBuild($"JPOGStegosaurus: Checking if state changed: previous state = [{previousState}] || entered state = [{state}]");
             if (previousState != state)
             {
                 SetWallkingAnimationPerSate(state);
@@ -946,10 +1009,6 @@ namespace JPOGStegosaurus {
                 {
                     inRandomIdleAnimation = false;
                     isDoneIdling = true;
-                }
-                else if (state == State.Stunned)
-                {
-                    PlayStunnedAnimationServerRpc();
                 }
             }
         }
@@ -979,6 +1038,16 @@ namespace JPOGStegosaurus {
                 agent.speed = 3;
                 SetWalkingAnimtion(agent.speed);
             }
+            else if (state == State.Stunned)
+            {
+                agent.speed = 0;
+                SetWalkingAnimtion(agent.speed);
+            }
+            else if (state == State.SpecialAttack)
+            {
+                agent.speed = 0;
+                SetWalkingAnimtion(agent.speed);
+            }
             else if (state == State.ChasingTarget)
             {
                 agent.speed = 6;
@@ -999,15 +1068,16 @@ namespace JPOGStegosaurus {
                 agent.speed = 0;
                 SetWalkingAnimtion(agent.speed);
             }
-            else if (state == State.Stunned)
-            {
-                agent.speed = 0;
-                SetWalkingAnimtion(agent.speed);
-            }
         }
 
         [ServerRpc(RequireOwnership = false)]
         private void SetWalkingAnimtionServerRpc(float agentSpeed)
+        {
+            SetWalkingAnimtion(agentSpeed);
+        }
+
+        [ClientRpc]
+        private void SetWalkingAnimtionClientRpc(float agentSpeed)
         {
             SetWalkingAnimtion(agentSpeed);
         }
@@ -1018,6 +1088,7 @@ namespace JPOGStegosaurus {
             {
                 LogIfDebugBuild($"JPOGStegosaurus: Stopping walking/running animation");
                 DoAnimationClientRpc("stopWalk");
+                DoAnimationClientRpc("stopRun");
             }
             else if (agentSpeed > 0 && agentSpeed <= 3)
             {
@@ -1068,7 +1139,7 @@ namespace JPOGStegosaurus {
 
             if (!isEnemyDead)
             {
-                LogIfDebugBuild("JPOGStegosaurus: T-rex is still alive, killing player Continues");
+                LogIfDebugBuild("JPOGStegosaurus: Stegosaurus is still alive, killing player Continues");
 
                 if (GameNetworkManager.Instance.localPlayerController == killPlayer)
                 {
