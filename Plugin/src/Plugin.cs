@@ -5,6 +5,9 @@ using LethalLib.Modules;
 using BepInEx.Logging;
 using System.IO;
 using JPOGStegosaurus.Configuration;
+using System.Collections.Generic;
+using System.Linq;
+using static LethalLib.Modules.Levels;
 
 namespace JPOGStegosaurus {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
@@ -65,7 +68,9 @@ namespace JPOGStegosaurus {
             NetworkPrefabs.RegisterNetworkPrefab(JPOGStegosaurus.enemyPrefab);
 
             // For different ways of registering your enemy, see https://github.com/EvaisaDev/LethalLib/blob/main/LethalLib/Modules/Enemies.cs
-            Enemies.RegisterEnemy(JPOGStegosaurus, BoundConfig.SpawnWeight.Value, Levels.LevelTypes.All, JPOGStegosaurusTN, JPOGStegosaurusTK);
+
+            RegisterEnemyWithConfig(BoundConfig.EnableJPOGStegoSaurus.Value, BoundConfig.StegoSaurusRarity.Value, JPOGStegosaurus, JPOGStegosaurusTN, JPOGStegosaurusTK);
+            //Enemies.RegisterEnemy(JPOGStegosaurus, BoundConfig.SpawnWeight.Value, Levels.LevelTypes.All, JPOGStegosaurusTN, JPOGStegosaurusTK);
             // For using our rarity tables, we can use the following:
             // Enemies.RegisterEnemy(JPOGStegosaurus, JPOGStegosaurusLevelRarities, JPOGStegosaurusCustomLevelRarities, JPOGStegosaurusTN, JPOGStegosaurusTK);
             
@@ -87,6 +92,59 @@ namespace JPOGStegosaurus {
                     }
                 }
             }
-        } 
+        }
+        private static void RegisterEnemyWithConfig(bool isnebabled, string configMoonRarity, EnemyType enemy, TerminalNode terminalNode, TerminalKeyword terminalKeyword)
+        {
+            if (isnebabled)
+            {
+                Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID}: JPOGStegosaurus is Enabled, setting up spawn weights");
+                (Dictionary<LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) = ConfigParsing(configMoonRarity);
+                Enemies.RegisterEnemy(enemy, spawnRateByLevelType, spawnRateByCustomLevelType, terminalNode, terminalKeyword);
+            }
+            else
+            {
+                Enemies.RegisterEnemy(enemy, 0, LevelTypes.All, terminalNode, terminalKeyword);
+                Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID}: JPOGStegosaurus is set as disabled");
+            }
+        }
+
+        private static (Dictionary<Levels.LevelTypes, int> spawnRateByLevelType, Dictionary<string, int> spawnRateByCustomLevelType) ConfigParsing(string configMoonRarity)
+        {
+            Dictionary<Levels.LevelTypes, int> spawnRateByLevelType = new Dictionary<Levels.LevelTypes, int>();
+            Dictionary<string, int> spawnRateByCustomLevelType = new Dictionary<string, int>();
+            foreach (string entry in configMoonRarity.Split(',').Select(s => s.Trim()))
+            {
+                string[] entryParts = entry.Split(':');
+
+                if (entryParts.Length != 2) continue;
+
+                string name = entryParts[0].ToLowerInvariant();
+                int spawnrate;
+
+                if (!int.TryParse(entryParts[1], out spawnrate)) continue;
+                if (name == "custom")
+                {
+                    name = "modded";
+                }
+                if (System.Enum.TryParse(name, true, out Levels.LevelTypes levelType))
+                {
+                    spawnRateByLevelType[levelType] = spawnrate;
+                }
+                else
+                {
+                    // Try appending "Level" to the name and re-attempt parsing
+                    string modifiedName = name + "Level";
+                    if (System.Enum.TryParse(modifiedName, true, out levelType))
+                    {
+                        spawnRateByLevelType[levelType] = spawnrate;
+                    }
+                    else
+                    {
+                        spawnRateByCustomLevelType[name] = spawnrate;
+                    }
+                }
+            }
+            return (spawnRateByLevelType, spawnRateByCustomLevelType);
+        }
     }
 }

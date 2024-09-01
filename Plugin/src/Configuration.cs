@@ -13,7 +13,7 @@ namespace JPOGStegosaurus.Configuration {
     public class PluginConfig : SyncedInstance<PluginConfig>
     {
         // For more info on custom configs, see https://lethal.wiki/dev/intermediate/custom-configs
-        public ConfigEntry<int> SpawnWeight;
+        //public ConfigEntry<int> SpawnWeight;
 
         public ConfigEntry<int> MaxIrritationLevel;
         public ConfigEntry<int> IntervalIrrtationDecrement;
@@ -24,10 +24,12 @@ namespace JPOGStegosaurus.Configuration {
         public ConfigEntry<int> IncreaseAmountIrritation;
 
 
+        public ConfigEntry<bool> EnableJPOGStegoSaurus;
+        public ConfigEntry<string> StegoSaurusRarity;
+
         private const string CATEGORY_GENERAL = "1. General";
         private const string CATEGORY_BEHAVIOR = "2. Behavior";
-        private const string CATEGORY_SPAWNING_GENERAL = "3. Spawning - General";
-        private const string CATEGORY_SPAWNING_MOONS = "4. Spawning - Moons";
+        private const string CATEGORY_SPAWNING_MOONS = "3. Spawning - Moons";
 
 
         [Conditional("DEBUG")]
@@ -40,10 +42,19 @@ namespace JPOGStegosaurus.Configuration {
         {
             InitInstance(this);
 
-            SpawnWeight = cfg.Bind(CATEGORY_GENERAL, "Spawn weight", 20,
+
+            EnableJPOGStegoSaurus = cfg.Bind(CATEGORY_GENERAL, "Enable StegoSaurus", true, "Use this option to Enable/Disable the StegoSaurus being able to spawn in game.");
+
+            StegoSaurusRarity = cfg.Bind(CATEGORY_SPAWNING_MOONS,
+                                                "StegoSaurus | Spawn Weight.",
+                                                "Modded:20,ExperimentationLevel:20,AssuranceLevel:20,VowLevel:30,OffenseLevel:20,MarchLevel:30,RendLevel:10,DineLevel:10,TitanLevel:10,Adamance:20,Embrion:10,Artifice:40,Auralis:20",
+                                                "Spawn Weight of the Stegosaurus on all moons, Feel free to add any moon to the list, just follow the format (also needs LLL installed for LE moons to work with this config).\n" +
+                                                "Format Example: \"MyCustomLevel:20,OrionLevel:100,Etc:20,EtcTwo:20,EtcThree:20\"");
+
+/*            SpawnWeight = cfg.Bind(CATEGORY_GENERAL, "Spawn weight", 20,
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
-
+*/
             IntervalIrrtationDecrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Decrement", 5,
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
@@ -140,14 +151,14 @@ namespace JPOGStegosaurus.Configuration {
         {
             if (IsHost)
             {
-                MessageManager.RegisterNamedMessageHandler("JPOGTrex_OnRequestConfigSync", OnRequestSync);
+                MessageManager.RegisterNamedMessageHandler("JPOGStegosaurus_OnRequestConfigSync", OnRequestSync);
                 Synced = true;
 
                 return;
             }
 
             Synced = false;
-            MessageManager.RegisterNamedMessageHandler("JPOGTrex_OnReceiveConfigSync", OnReceiveSync);
+            MessageManager.RegisterNamedMessageHandler("JPOGStegosaurus_OnReceiveConfigSync", OnReceiveSync);
             RequestSync();
         }
 

@@ -12,17 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e80ae96b3eb9177eea5c8f9dadbcda1, type: 3}
   m_Name: JPOGStegosaurusTN
   m_EditorClassIdentifier: 
-  displayText: 'Example Enemy
+  displayText: 'Stegosaurus
 
 
-    Sigurd''s danger level: ?%
-
+    Sigurd''s danger level: B
 
     Scientific name:
-    Enemius Examplus
+    Stegosaurus Armatus
 
 
-    The Example Enemy! The Example Enemy is real! - Sigurd'
+    The Stegosaurus appears to be relatively peacefull.
+    Staying in close proximity might agitate the Stegosaurus. !!CAREFULL!! walking
+    near the Stegosaurus''s tail might provoke a defensive response, even if not
+    agitated!'
   terminalEvent: 
   clearPreviousText: 1
   maxCharactersToType: 35
@@ -36,7 +38,7 @@ MonoBehaviour:
   returnFromStorage: 0
   itemCost: 0
   creatureFileID: 7014
-  creatureName: Example Enemy
+  creatureName: Stegosaurus
   storyLogFileID: -1
   overrideOptions: 0
   acceptAnything: 0
@@ -44,6 +46,6 @@ MonoBehaviour:
   playClip: {fileID: 0}
   playSyncedClip: 2
   displayTexture: {fileID: 0}
-  displayVideo: {fileID: 32900000, guid: d2497e7aef1c8cd3eb8c03e57932f1b3, type: 3}
+  displayVideo: {fileID: 32900000, guid: 948d9bfbbf8fa8f468ab6a5548e400c5, type: 3}
   loadImageSlowly: 1
   persistentImage: 0
