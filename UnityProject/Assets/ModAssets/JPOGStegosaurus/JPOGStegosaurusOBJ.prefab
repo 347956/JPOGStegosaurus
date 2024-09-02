@@ -518,7 +518,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainScript: {fileID: 6688076781937994725}
-  canCollideWithEnemies: 0
+  canCollideWithEnemies: 1
   onlyCollideWhenGrounded: 0
 --- !u!54 &21624137392527268
 Rigidbody:

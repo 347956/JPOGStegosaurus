@@ -2,13 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Principal;
 using GameNetcodeStuff;
 using JPOGStegosaurus.Configuration;
-using LethalLib.Modules;
 using Unity.Netcode;
 using UnityEngine;
-using static UnityEngine.UIElements.UIR.Implementation.UIRStylePainter;
 
 namespace JPOGStegosaurus {
 
@@ -74,7 +71,7 @@ namespace JPOGStegosaurus {
         private bool readyToChaseFromStunned;
         private bool specialAttackCanHitPlayer = false;
         private bool specialAttackHasHitPlayer = false;
-        private EnemyAI targetEntiy;
+        private EnemyAI? targetEntiy;
 
         ThreatType IVisibleThreat.type => ThreatType.EyelessDog;
 
@@ -688,6 +685,29 @@ namespace JPOGStegosaurus {
             }
         }
 
+        public override void OnCollideWithEnemy(Collider other, EnemyAI collidedEnemy)
+        {
+            if (isEnemyDead)
+            {
+                return;
+            }
+            if(collidedEnemy == null || collidedEnemy.isEnemyDead || !collidedEnemy.enemyType.canDie)
+            {
+                return;
+            }
+            base.OnCollideWithEnemy(other, collidedEnemy);
+            if (collidedEnemy.enemyType != enemyType)
+            {
+                LogIfDebugBuild($"JPOGStegosaurus: Collision with [{collidedEnemy.enemyType.enemyName}]!");
+                if (!inSpecialAnimation && !inStompAttack && !inSpecialTailAttack) //Should not stomp attack an enemyEntity if already in an attack animation
+                {
+                    targetEntiy = collidedEnemy;
+                    LookAtTargetEntityServerRpc();
+                    StartCoroutine(BeginStompAttack());
+                }
+            }
+        }
+
         public override void HitEnemy(int force = 1, PlayerControllerB? playerWhoHit = null, bool playHitSFX = false, int hitID = -1) {
             base.HitEnemy(force, playerWhoHit, playHitSFX, hitID);
             if (isEnemyDead) {
@@ -1024,6 +1044,11 @@ namespace JPOGStegosaurus {
                 {
                     CheckIfStompAttackHitPlayersClientRpc();
                     yield return null;
+                }
+                if(targetEntiy != null)
+                {
+                    targetEntiy.HitEnemy(5, null, true, -1);
+                    targetEntiy = null;
                 }
             }
             yield break;
