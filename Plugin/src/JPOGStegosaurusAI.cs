@@ -54,7 +54,7 @@ namespace JPOGStegosaurus {
         private State previousState = State.Idling;
         private bool inRandomIdleAnimation = false;
         private bool isDoneIdling = false;
-        private float timeToIdle;
+        private float timeToIdle = 30f;
         private bool inTailAttack;
         private List<int> tailHitPlayerIds = new List<int>();
         private List<int> stompHitPlayerIds = new List<int>();
@@ -589,7 +589,7 @@ namespace JPOGStegosaurus {
                 //LogIfDebugBuild($"JPOGStegosaurus: Checking Back Attack Area for players");
                 CheckForPlayersInAttackAreaBackServerRpc();
                 //LogIfDebugBuild($"JPOGStegosaurus: Checking Front Attack Area for players");
-                CheckForPlayersInAttackAreaFronServerRpc();
+                CheckForPlayersInAttackAreaFrontServerRpc();
                 //LogIfDebugBuild($"JPOGStegosaurus: Checking Aggro Area for players");
                 //CheckForEntitiesInAggroRangeServerRpc();
                 yield return new WaitForSeconds(1.0f);
@@ -798,9 +798,26 @@ namespace JPOGStegosaurus {
         }
 
         [ServerRpc(RequireOwnership = false)]
-        private void CheckForPlayersInAttackAreaFronServerRpc()
+        private void CheckForPlayersInAttackAreaFrontServerRpc()
         {
             var state = currentBehaviourStateIndex;
+            bool playerInFrontAttackArea = CheckForPlayersInAttackAreaFront();
+            if (playerInFrontAttackArea)
+            {
+                if (!inStompAttack || !inTailAttack)
+                {
+                    if (state == (int)State.ChasingTarget) //The frontal attack should only occur when the StegoSaurus is irritated (in chasing mode).
+                    {
+                        StartCoroutine(BeginStompAttack());
+                    }
+                }
+            }
+
+        }
+
+        private bool CheckForPlayersInAttackAreaFront()
+        {
+            bool playerInFrontAttackArea = false;
             int playerLayer = 1 << 3;
             Collider[] hitColliders = Physics.OverlapBox(attackAreaFront.position, attackAreaFront.localScale, Quaternion.identity, playerLayer);
             if (hitColliders.Length > 0)
@@ -811,17 +828,12 @@ namespace JPOGStegosaurus {
                     if (playerControllerB != null && irritationLevel != irritationMaxLevel)
                     {
                         LogIfDebugBuild($"JPOGStegosaurus: player: [{playerControllerB.actualClientId}] was in Frontal Attack Area ");
-                        if (state == (int)State.ChasingTarget) //The frontal attack should only occur when the StegoSaurus is irritated (in chasing mode).
-                        {
-                            if (!inStompAttack || !inTailAttack)
-                            {
-                                StartCoroutine(BeginStompAttack());
-                            }
-                        }
                         IncreaseIrritationServerRpc();
                     }
                 }
+                playerInFrontAttackArea = true;
             }
+            return playerInFrontAttackArea;
         }
 
 
@@ -1122,6 +1134,7 @@ namespace JPOGStegosaurus {
         {
 
             var state = currentBehaviourStateIndex;
+            LogIfDebugBuild($"JPOGStegosaurus: Checking time before increasing irritation. actual time = [{Time.time}] || lastIrritationIncrementTime = [{lastIrritationIncrementTime}] || irritationIncrementInterval = [{irritationIncrementInterval}]");
             if ((Time.time - lastIrritationIncrementTime >= irritationIncrementInterval) && (state != (int)State.ChasingTarget))
             {
                 irritationLevel = Mathf.Clamp(irritationLevel + irritationIncrementAmount, 0, irritationMaxLevel);
@@ -1367,7 +1380,7 @@ namespace JPOGStegosaurus {
             irritationIncrementInterval = PluginConfig.Instance.IntervalIrrtationIncrement.Value;
             irritationIncrementAmount = PluginConfig.Instance.IncreaseAmountIrritation.Value;
             irritationDecrementAmount = PluginConfig.Instance.DecreaseAmountIrritation.Value;
-            timeToIdle = PluginConfig.Instance.IntervalIdling.Value;
+            //timeToIdle = PluginConfig.Instance.IntervalIdling.Value;
         }
 
         [ClientRpc]

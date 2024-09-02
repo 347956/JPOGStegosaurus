@@ -18,7 +18,7 @@ namespace JPOGStegosaurus.Configuration {
         public ConfigEntry<int> MaxIrritationLevel;
         public ConfigEntry<int> IntervalIrrtationDecrement;
         public ConfigEntry<int> IntervalIrrtationIncrement;
-        public ConfigEntry<int> IntervalIdling;
+        //public ConfigEntry<int> IntervalIdling;
 
         public ConfigEntry<int> DecreaseAmountIrritation;
         public ConfigEntry<int> IncreaseAmountIrritation;
@@ -56,28 +56,22 @@ namespace JPOGStegosaurus.Configuration {
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
 */
             IntervalIrrtationDecrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Decrement", 5,
-                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
-                "Goes up from 0, lower is more rare, 100 and up is very common.");
+                "The time interval (in seconds) required for the Stegosaurus to decrease its irrtation level.");
 
-            IntervalIrrtationIncrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Decrement", 2,
-                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
-                "Goes up from 0, lower is more rare, 100 and up is very common.");
-
-            IntervalIdling = IntervalIrrtationIncrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Idling", 30,
-                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
-                "Goes up from 0, lower is more rare, 100 and up is very common.");
+            IntervalIrrtationIncrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Increment", 2,
+                "The time interval (in seconds) required for the Stegosaurus to increase its irrtation level.");
+/*
+            IntervalIdling = IntervalIrrtationIncrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Idling", 2,
+                "The interval time (in seconds) the Stegosaurus has to wait before playing another idle animation");*/
 
             MaxIrritationLevel = cfg.Bind(CATEGORY_BEHAVIOR, "Max Irritation Level", 100,
-                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
-                "Goes up from 0, lower is more rare, 100 and up is very common.");
+                "The max thresholf for the irritation level of the Stegosaurus. Once this threshold is reached, the Stegosaurus will start chasing the player.");
 
             DecreaseAmountIrritation = cfg.Bind(CATEGORY_BEHAVIOR, "Decrease Amount Irritation", 5,
-                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
-                "Goes up from 0, lower is more rare, 100 and up is very common.");
+                "The Stegosaurus will decrease its irritation level by this amount every after enough time has passed (Interval Irrtation Decrement)");
 
             IncreaseAmountIrritation= cfg.Bind(CATEGORY_BEHAVIOR, "Increase Amount Irritation", 10,
-                "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
-                "Goes up from 0, lower is more rare, 100 and up is very common.");
+                "The amount by which the Stegosaurus increases its irritation level when the player is near it");
 
             ClearUnusedEntries(cfg);
         }
