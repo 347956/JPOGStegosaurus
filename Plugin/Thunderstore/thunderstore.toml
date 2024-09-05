@@ -18,7 +18,7 @@ readme = "./README.md"
 outdir = "./Packages"
 
 [[build.copy]]
-source = "../bin/Release/netstandard2.1/347956.JPOGStegosaurus.dll"
+source = "../bin/Release/netstandard2.1/JPOGStegosaurus.dll"
 target = "plugins/JPOGStegosaurus/"
 
 [[build.copy]]
