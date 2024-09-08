@@ -18,6 +18,7 @@ namespace JPOGStegosaurus.Configuration {
         public ConfigEntry<int> MaxIrritationLevel;
         public ConfigEntry<int> IntervalIrrtationDecrement;
         public ConfigEntry<int> IntervalIrrtationIncrement;
+        public ConfigEntry<int> MaxStegoCount;
         //public ConfigEntry<int> IntervalIdling;
 
         public ConfigEntry<int> DecreaseAmountIrritation;
@@ -72,6 +73,8 @@ namespace JPOGStegosaurus.Configuration {
 
             IncreaseAmountIrritation= cfg.Bind(CATEGORY_BEHAVIOR, "Increase Amount Irritation", 10,
                 "The amount by which the Stegosaurus increases its irritation level when the player is near it");
+
+            MaxStegoCount = cfg.Bind(CATEGORY_BEHAVIOR, "Max Stegosaurus Count", 3, "Increasing this number makes it possible for more Stegosaurus to spawn naturally.");
 
             ClearUnusedEntries(cfg);
         }

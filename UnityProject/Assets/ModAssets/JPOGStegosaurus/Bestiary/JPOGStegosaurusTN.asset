@@ -24,7 +24,16 @@ MonoBehaviour:
     The Stegosaurus appears to be relatively peacefull.
     Staying in close proximity might agitate the Stegosaurus. !!CAREFULL!! walking
     near the Stegosaurus''s tail might provoke a defensive response, even if not
-    agitated!'
+    agitated! - Sigurd
+
+
+    Stegosaurus also has a reputation for having a small
+    brain. Its brain was about the size of a walnut, about the equivalent of a dog''s
+    brain, making it among the dinosaurs with the lowest brain-to-body ratio. At
+    one-point scientists hypothesized that it had an auxiliary "brain" (not an actual
+    brain but a bundle of nerves) above its rear legs to help control its movements
+    because its brain was so small. However, that hypothesis has since been rejected
+    by many paleontologists. '
   terminalEvent: 
   clearPreviousText: 1
   maxCharactersToType: 35

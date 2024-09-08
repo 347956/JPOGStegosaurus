@@ -41,6 +41,7 @@ namespace JPOGStegosaurus {
             var JPOGStegosaurus = ModAssets.LoadAsset<EnemyType>("JPOGStegosaurus");
             var JPOGStegosaurusTN = ModAssets.LoadAsset<TerminalNode>("JPOGStegosaurusTN");
             var JPOGStegosaurusTK = ModAssets.LoadAsset<TerminalKeyword>("JPOGStegosaurusTK");
+            JPOGStegosaurus.MaxCount = BoundConfig.MaxStegoCount.Value;
 
             // Optionally, we can list which levels we want to add our enemy to, while also specifying the spawn weight for each.
             /*

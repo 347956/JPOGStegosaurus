@@ -20,7 +20,7 @@ JPOGStegosaurus is a fully animated custom enemy that spawns outside during the 
 ## Feedback 📢
 Feel free to leave feedback and/or bugs you encounter on the discord thread for JPOG Stegosaurus or by Creating a GitHub issue!  
 - [Lethal Company Modding discord](https://discord.com/channels/1168655651455639582/1267152262602555473):  
-[Modding] > [mod-releases] > [JPOG Stegosaurus] 
+[Modding] > [mod-releases] > [JPOG | T-Rex 🦖 | Stegosaurus] 
 - [GitHub Issues](https://github.com/347956/JPOGStegosaurus/issues)
 
 

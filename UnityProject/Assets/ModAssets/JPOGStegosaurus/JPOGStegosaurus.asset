@@ -68,7 +68,7 @@ MonoBehaviour:
   enemyPrefab: {fileID: 294814310287236086, guid: 787385a5924e0e9488b53dcde75f15cc,
     type: 3}
   PowerLevel: 1
-  MaxCount: 5
+  MaxCount: 3
   numberSpawned: 1
   nestsSpawned: 0
   isOutsideEnemy: 1
