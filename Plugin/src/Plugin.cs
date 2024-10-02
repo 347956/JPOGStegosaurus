@@ -41,7 +41,17 @@ namespace JPOGStegosaurus {
             var JPOGStegosaurus = ModAssets.LoadAsset<EnemyType>("JPOGStegosaurus");
             var JPOGStegosaurusTN = ModAssets.LoadAsset<TerminalNode>("JPOGStegosaurusTN");
             var JPOGStegosaurusTK = ModAssets.LoadAsset<TerminalKeyword>("JPOGStegosaurusTK");
+
             JPOGStegosaurus.MaxCount = BoundConfig.MaxStegoCount.Value;
+            if (!(BoundConfig.NormalizedTimeInDayToLeave.Value < 0f || BoundConfig.NormalizedTimeInDayToLeave.Value > 1f))
+            {
+                JPOGStegosaurus.normalizedTimeInDayToLeave = BoundConfig.NormalizedTimeInDayToLeave.Value;
+            }
+            else
+            {
+                Logger.LogError($"Stegosaurus NormalizedTimeInDayToLeave was set lower than 0 or higher than 1. assigning default value");
+                JPOGStegosaurus.normalizedTimeInDayToLeave = 0.6f;
+            }
 
             // Optionally, we can list which levels we want to add our enemy to, while also specifying the spawn weight for each.
             /*

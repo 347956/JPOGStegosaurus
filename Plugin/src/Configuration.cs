@@ -21,6 +21,8 @@ namespace JPOGStegosaurus.Configuration {
         public ConfigEntry<int> MaxStegoCount;
         //public ConfigEntry<int> IntervalIdling;
 
+        public ConfigEntry<float> NormalizedTimeInDayToLeave;
+
         public ConfigEntry<int> DecreaseAmountIrritation;
         public ConfigEntry<int> IncreaseAmountIrritation;
 
@@ -55,7 +57,14 @@ namespace JPOGStegosaurus.Configuration {
 /*            SpawnWeight = cfg.Bind(CATEGORY_GENERAL, "Spawn weight", 20,
                 "The spawn chance weight for JPOGStegosaurus, relative to other existing enemies.\n" +
                 "Goes up from 0, lower is more rare, 100 and up is very common.");
+
+            
 */
+            
+            NormalizedTimeInDayToLeave = cfg.Bind(CATEGORY_BEHAVIOR, "Normalized Tim in Day To leave", 0.6f,
+                "Determines at what time in-game the Stegosaurus should leave/despawn.\n" +
+                "1 being the max = midnight");
+
             IntervalIrrtationDecrement = cfg.Bind(CATEGORY_BEHAVIOR, "Interval Irrtation Decrement", 5,
                 "The time interval (in seconds) required for the Stegosaurus to decrease its irrtation level.");
 

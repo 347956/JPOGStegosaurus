@@ -1,3 +1,12 @@
+## 1.0.2
+Some small Tweaks.
+- Updated the NavMeshAgent
+	- This should improve the navigation of the Stegosaurus and where it can and cannot go.
+- Reduced "NormalizedTimeInDayToLeave" value.
+	- the Stegosaurus should now despawn at the set time.
+- Added a Config entry where the "NormalizedTimeInDayToLeave" can be set for the Stegosaurus.
+
+
 ## 1.0.1
 Some small fixes.
 - Creature voice:
