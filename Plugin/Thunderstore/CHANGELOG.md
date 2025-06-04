@@ -1,3 +1,6 @@
+## 1.0.3
+Fixed the Stegosaurus for V70
+
 ## 1.0.2
 Some small Tweaks.
 - Updated the NavMeshAgent
