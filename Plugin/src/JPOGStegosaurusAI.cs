@@ -68,7 +68,6 @@ namespace JPOGStegosaurus {
         private bool isStunned = false;
         private bool readyToChaseFromSpecialAttack = false;
         private Quaternion originalRotation;
-        private bool readyToChaseFromStunned;
         private bool specialAttackCanHitPlayer = false;
         private bool specialAttackHasHitPlayer = false;
         private EnemyAI? targetEntiy;
@@ -1580,6 +1579,20 @@ namespace JPOGStegosaurus {
         {
             //LogIfDebugBuild("JPOGStegosaurus: Playing audio clip through TailSFX");
             tailSFX.PlayOneShot(audioClip);
+        }
+
+        public GrabbableObject GetHeldObject()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsThreatDead()
+        {
+            if (this.enemyHP.Equals(0))
+            {
+                return true;
+            }
+            return false;
         }
     }
 }
