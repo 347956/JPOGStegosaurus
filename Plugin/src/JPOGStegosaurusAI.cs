@@ -137,8 +137,6 @@ namespace JPOGStegosaurus {
             {
                 Areas.Start();
             }
-            // We make the enemy start searching. This will make it start wandering around.
-            StartSearch(transform.position);
         }
 
         private void CreateHelpers()
@@ -151,6 +149,7 @@ namespace JPOGStegosaurus {
             Idle = new StegoIdleHelper(this);
 
             var config = Plugin.BoundConfig;
+            Movement.Configure(config.MinRoamDistance.Value, config.MaxRoamDistance.Value);
             Irritation.Configure(config.MaxIrritationLevel.Value,
                 config.IncreaseAmountIrritation.Value, config.IntervalIrrtationIncrement.Value,
                 config.DecreaseAmountIrritation.Value, config.IntervalIrrtationDecrement.Value);
@@ -193,6 +192,7 @@ namespace JPOGStegosaurus {
 
             switch ((StegoState)currentBehaviourStateIndex) {
                 case StegoState.Roaming:
+                    Movement.UpdateRoaming();
                     if (Irritation.IsMax)
                     {
                         SwitchToBehaviourState((int)StegoState.ChasingTarget);
@@ -233,14 +233,7 @@ namespace JPOGStegosaurus {
             {
                 case StegoState.Roaming:
                     movingTowardsTargetPlayer = false;
-                    if (currentSearch == null || !currentSearch.inProgress)
-                    {
-                        StartSearch(transform.position);
-                    }
-                    break;
-                case StegoState.ChasingTarget:
-                    // We steer the agent ourselves while chasing, so the search routine must not set destinations
-                    StopSearch(currentSearch);
+                    Movement.ResetRoamTarget();
                     break;
                 case StegoState.SpecialAttack:
                     Attacks.ResetSpecialAttack();
@@ -362,12 +355,6 @@ namespace JPOGStegosaurus {
             }
         }
 
-        internal void RestartSearch()
-        {
-            StopSearch(currentSearch);
-            StartSearch(transform.position);
-        }
-
         // Players in the ship, on a ladder, in a vehicle or dead cannot be attacked
         internal bool CanAttackPlayer(PlayerControllerB? player)
         {
@@ -425,8 +412,6 @@ namespace JPOGStegosaurus {
                 // so we don't need to call a death animation ourselves.
                 Areas.Stop();
                 Attacks.StopAll();
-                // We need to stop our search coroutine, because the game does not do that by default.
-                StopSearch(currentSearch);
                 Movement.SetSpeed(0f);
                 DoAnimationClientRpc("stopTail");
                 KillEnemyOnOwnerClient();

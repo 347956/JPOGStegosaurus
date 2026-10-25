@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 namespace JPOGStegosaurus
@@ -11,10 +12,25 @@ namespace JPOGStegosaurus
         private const float StuckCheckInterval = 5f;
         private const float StuckDistance = 0.1f;
         private const float TurnSpeed = 4f;
+        private const float MaxRoamTurnAngle = 70f;
+        private const float MinFallbackRoamDistance = 10f;
+        private const float RoamArriveDistance = 5f;
+        private const float RoamTimeout = 60f;
+        private const int MaxRoamPathAttempts = 8;
+        // A new roam point may not be near any of the last 5 to 10 roam points
+        private const int MinRememberedRoamPoints = 5;
+        private const int MaxRememberedRoamPoints = 10;
+        private const float RememberedRoamPointRadius = 15f;
 
         private readonly JPOGStegosaurusAI stegoAI;
         private float stuckTimer;
         private Vector3 lastPosition;
+        private float minRoamDistance = 30f;
+        private float maxRoamDistance = 90f;
+        private bool hasRoamTarget;
+        private Vector3 roamTarget;
+        private float roamStartTime;
+        private readonly List<Vector3> recentRoamPoints = new List<Vector3>();
 
         public StegoMovementHelper(JPOGStegosaurusAI stegoAI)
         {
@@ -25,6 +41,131 @@ namespace JPOGStegosaurus
         void LogIfDebugBuild(string text)
         {
             Plugin.Logger.LogInfo(text);
+        }
+
+        public void Configure(float minRoamDistance, float maxRoamDistance)
+        {
+            this.minRoamDistance = minRoamDistance;
+            this.maxRoamDistance = Mathf.Max(maxRoamDistance, minRoamDistance);
+        }
+
+        public void ResetRoamTarget()
+        {
+            hasRoamTarget = false;
+        }
+
+        //Roaming is done with our own far away waypoints instead of the vanilla search routine, which always picks the
+        //closest unsearched node and makes the Stegosaurus zigzag. Called every AI interval while roaming.
+        public void UpdateRoaming()
+        {
+            if (hasRoamTarget)
+            {
+                Vector3 toTarget = roamTarget - stegoAI.transform.position;
+                toTarget.y = 0;
+                if (toTarget.magnitude < RoamArriveDistance || Time.time - roamStartTime > RoamTimeout)
+                {
+                    hasRoamTarget = false;
+                }
+            }
+            if (!hasRoamTarget)
+            {
+                PickRoamTarget();
+            }
+        }
+
+        //Picks a random node that is far away and roughly in front of the Stegosaurus, so it walks in long lines.
+        //Nodes near one of the last few roam points are skipped, unless there is nothing else.
+        private void PickRoamTarget()
+        {
+            List<Vector3> candidates = GetRoamCandidates(avoidRecentPoints: true);
+            if (candidates.Count == 0)
+            {
+                candidates = GetRoamCandidates(avoidRecentPoints: false);
+            }
+
+            Vector3 position = stegoAI.transform.position;
+            for (int i = 0; i < candidates.Count && i < MaxRoamPathAttempts; i++)
+            {
+                if (stegoAI.SetDestinationToPosition(candidates[i], checkForPath: true))
+                {
+                    roamTarget = candidates[i];
+                    roamStartTime = Time.time;
+                    hasRoamTarget = true;
+                    RememberRoamPoint(roamTarget);
+                    LogIfDebugBuild($"JPOGStegosaurus: new roam target {Vector3.Distance(position, roamTarget):F0}m away");
+                    return;
+                }
+            }
+        }
+
+        //Best candidates first, each group in random order
+        private List<Vector3> GetRoamCandidates(bool avoidRecentPoints)
+        {
+            Vector3 position = stegoAI.transform.position;
+            Vector3 forward = stegoAI.transform.forward;
+            forward.y = 0;
+
+            var ahead = new List<Vector3>();
+            var anyDirection = new List<Vector3>();
+            var nearby = new List<Vector3>();
+            foreach (GameObject node in stegoAI.allAINodes)
+            {
+                if (node == null || (avoidRecentPoints && IsNearRecentRoamPoint(node.transform.position)))
+                {
+                    continue;
+                }
+                Vector3 toNode = node.transform.position - position;
+                toNode.y = 0;
+                float distance = toNode.magnitude;
+                if (distance >= minRoamDistance && distance <= maxRoamDistance)
+                {
+                    (Vector3.Angle(forward, toNode) <= MaxRoamTurnAngle ? ahead : anyDirection).Add(node.transform.position);
+                }
+                else if (distance >= MinFallbackRoamDistance && distance < minRoamDistance)
+                {
+                    nearby.Add(node.transform.position);
+                }
+            }
+
+            var candidates = new List<Vector3>();
+            foreach (List<Vector3> group in new[] { ahead, anyDirection, nearby })
+            {
+                Shuffle(group);
+                candidates.AddRange(group);
+            }
+            return candidates;
+        }
+
+        private bool IsNearRecentRoamPoint(Vector3 point)
+        {
+            foreach (Vector3 recent in recentRoamPoints)
+            {
+                if (Vector3.Distance(point, recent) < RememberedRoamPointRadius)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        //The amount of points that is remembered differs per pick, so the route doesn't become a fixed loop
+        private void RememberRoamPoint(Vector3 point)
+        {
+            recentRoamPoints.Add(point);
+            int rememberCount = stegoAI.enemyRandom.Next(MinRememberedRoamPoints, MaxRememberedRoamPoints + 1);
+            while (recentRoamPoints.Count > rememberCount)
+            {
+                recentRoamPoints.RemoveAt(0);
+            }
+        }
+
+        private void Shuffle(List<Vector3> list)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = stegoAI.enemyRandom.Next(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
         }
 
         //Called every frame on the owner
@@ -39,7 +180,7 @@ namespace JPOGStegosaurus
             TurnTowardsTarget();
         }
 
-        //Roaming is the only state that depends on the search routine, so only restart it there
+        //Only roaming picks its own destination, so only pick a new one there
         private void CheckIfStuck()
         {
             Vector3 currentPosition = stegoAI.transform.position;
@@ -47,7 +188,7 @@ namespace JPOGStegosaurus
                 && Vector3.Distance(currentPosition, lastPosition) < StuckDistance)
             {
                 LogIfDebugBuild("JPOGStegosaurus: Not moving, navigating to a new position.");
-                stegoAI.RestartSearch();
+                ResetRoamTarget();
             }
             lastPosition = currentPosition;
         }

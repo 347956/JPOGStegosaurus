@@ -14,6 +14,8 @@ namespace JPOGStegosaurus.Configuration {
         public ConfigEntry<int> IntervalIrrtationIncrement;
         public ConfigEntry<int> DecreaseAmountIrritation;
         public ConfigEntry<int> IncreaseAmountIrritation;
+        public ConfigEntry<float> MinRoamDistance;
+        public ConfigEntry<float> MaxRoamDistance;
 
         public PluginConfig(ConfigFile cfg)
         {
@@ -31,6 +33,12 @@ namespace JPOGStegosaurus.Configuration {
 
             IncreaseAmountIrritation = cfg.Bind(CATEGORY_BEHAVIOR, "Increase Amount Irritation", 10,
                 "The amount by which the Stegosaurus increases its irritation level when the player is near it");
+
+            MinRoamDistance = cfg.Bind(CATEGORY_BEHAVIOR, "Min Roam Distance", 30f,
+                "The minimum distance (in meters) of the next point the Stegosaurus walks to while roaming. Higher values make it walk in longer lines.");
+
+            MaxRoamDistance = cfg.Bind(CATEGORY_BEHAVIOR, "Max Roam Distance", 90f,
+                "The maximum distance (in meters) of the next point the Stegosaurus walks to while roaming.");
 
             ClearUnusedEntries(cfg);
         }
