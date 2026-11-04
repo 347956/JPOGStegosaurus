@@ -1,3 +1,9 @@
+## 1.0.4
+Fixed the Stegosaurus for V73
+- The StegoSaurus now has a few extra collision boxes, this should make it easier to hit him with the shotgun for example.
+- Added an extra hit check to the Stegosaurus stomp and tail attack.
+	- The Stegosaurus should no longer be able to hit you with these attacks when in the driver or pasenger seat of the Company Cruiser (cargo remains unsafe).
+
 ## 1.0.3
 Fixed the Stegosaurus for V70
 
