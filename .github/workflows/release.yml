@@ -1,0 +1,160 @@
+name: GitHub release
+
+# Publishes a GitHub Release with the Thunderstore ZIP (it does not upload to Thunderstore).
+# - Push to main: releases the version in Plugin~/JPOGStegosaurus.csproj when its tag v<version> doesn't exist yet,
+#   then creates that tag. Bump <Version> (and the Unity mod information) to release again.
+# - Push a v* tag, or run it by hand with an existing tag: builds and releases that tag.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to build or retry (e.g. v1.0.8)'
+        required: true
+
+permissions:
+  contents: write
+
+# Keep automatic, manual and tag-triggered releases from racing each other.
+concurrency:
+  group: github-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
+      create_tag: ${{ steps.version.outputs.create_tag }}
+      commit: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.sha }}
+      - name: Select release version
+        id: version
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import xml.etree.ElementTree as ET
+
+          version = ET.parse('Plugin~/JPOGStegosaurus.csproj').findtext('./PropertyGroup/Version')
+          if not version or not re.fullmatch(r'\d+\.\d+\.\d+', version):
+              raise SystemExit(f'Invalid project release version: {version!r}')
+          tag = f'v{version}'
+          ref = os.environ['GITHUB_REF']
+          manual = os.environ['GITHUB_EVENT_NAME'] == 'workflow_dispatch'
+          automatic = not manual and ref == 'refs/heads/main'
+          requested = os.environ.get('INPUT_TAG', '') if manual else ref.removeprefix('refs/tags/')
+          if not automatic and requested != tag:
+              raise SystemExit(f'Tag {requested} does not match project version {tag}')
+          exists = subprocess.run(['git', 'show-ref', '--verify', '--quiet', f'refs/tags/{tag}']).returncode
+          if exists not in (0, 1):
+              raise SystemExit('Could not check existing release tags')
+          release = not automatic or exists == 1
+          if release:
+              info = Path('JPOGStegosaurusModInformation.asset').read_text()
+              match = re.search(r'^  <Version>k__BackingField: (.+)$', info, re.MULTILINE)
+              if not match or match[1].strip() != version:
+                  raise SystemExit('Unity mod information version does not match the project version; update it, rebuild and commit the bundles first')
+              for name in ('jpogstegosaurusmainassets.duskmod', 'jpogstegosaurusassets'):
+                  if not (Path('AssetBundles') / name).is_file():
+                      raise SystemExit(f'Missing AssetBundles/{name}; rebuild and commit the Unity bundles first')
+              changelog = Path('Package/CHANGELOG.md').read_text()
+              if not re.search(rf'^#+\s*v?{re.escape(version)}\b', changelog, re.MULTILINE):
+                  raise SystemExit(f'Package/CHANGELOG.md has no entry for {version}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'tag={tag}\nversion={version}\nrelease={str(release).lower()}\n')
+              output.write(f'create_tag={str(automatic and release).lower()}\n')
+          print(f'{"Release" if release else "Skip existing version"}: {tag}')
+          PY
+      - name: Record release commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run tests
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for project in Tests~/*/*.csproj; do
+            dotnet test "$project" -c Debug
+            dotnet test "$project" -c Release
+          done
+      - name: Restore local tools
+        working-directory: Plugin~
+        run: dotnet tool restore
+      - name: Build and package Release
+        run: dotnet build 'Plugin~/JPOGStegosaurus.csproj' -c Release -p:CI=true
+      - name: Verify release package
+        run: |
+          python3 - <<'PY'
+          import json, os, zipfile
+          from pathlib import Path
+          version = os.environ['RELEASE_VERSION']
+          package = Path(f'Plugin~/Thunderstore/Packages/347956-JPOGStegosaurus-{version}.zip')
+          with zipfile.ZipFile(package) as archive:
+              names = {name.lstrip('/') for name in archive.namelist()}
+              def read(name):
+                  for entry in archive.namelist():
+                      if entry.lstrip('/') == name:
+                          return archive.read(entry)
+                  raise SystemExit(f'Package is missing {name}')
+              manifest = json.loads(read('manifest.json'))
+              if manifest['version_number'] != version:
+                  raise SystemExit('Package manifest version does not match the release')
+              for name, source in {
+                  'plugins/JPOGStegosaurus/JPOGStegosaurus.dll': 'Plugin~/bin/Release/netstandard2.1/JPOGStegosaurus.dll',
+                  'plugins/JPOGStegosaurus/jpogstegosaurusmainassets.duskmod': 'AssetBundles/jpogstegosaurusmainassets.duskmod',
+                  'plugins/JPOGStegosaurus/Assets/jpogstegosaurusassets': 'AssetBundles/jpogstegosaurusassets',
+                  'README.md': 'Package/README.md',
+                  'CHANGELOG.md': 'Package/CHANGELOG.md',
+              }.items():
+                  if read(name) != Path(source).read_bytes():
+                      raise SystemExit(f'Package contains an outdated file: {name}')
+              if 'icon.png' not in names:
+                  raise SystemExit('Package is missing icon.png')
+          PY
+      - name: Tag the tested commit
+        if: needs.prepare.outputs.create_tag == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$RELEASE_TAG" -m "Release JPOGStegosaurus $RELEASE_VERSION"
+          git push origin "refs/tags/$RELEASE_TAG"
+      # Tags pushed with GITHUB_TOKEN do not trigger another workflow, so the release is published here.
+      - name: Publish GitHub Release (not Thunderstore)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; leaving it unchanged."
+            exit 0
+          fi
+          package="Plugin~/Thunderstore/Packages/347956-JPOGStegosaurus-$RELEASE_VERSION.zip"
+          gh release create "$RELEASE_TAG" "$package" --title "JPOGStegosaurus $RELEASE_TAG" --generate-notes --verify-tag

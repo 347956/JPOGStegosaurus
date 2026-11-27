@@ -1,0 +1,92 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      # Runs every xUnit project under Tests~/. A repo without tests gets a note in the summary instead of a failure.
+      - name: Run tests
+        shell: bash
+        run: |
+          shopt -s nullglob
+          projects=(Tests~/*/*.csproj)
+          if [ ${#projects[@]} -eq 0 ]; then
+            echo "No test projects in Tests~/." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          for project in "${projects[@]}"; do
+            name=$(basename "$project" .csproj)
+            for configuration in Debug Release; do
+              dotnet test "$project" -c "$configuration" --verbosity normal \
+                --logger "trx;LogFileName=$name-$configuration.trx" \
+                --results-directory "$RUNNER_TEMP/test-results"
+            done
+          done
+      - name: Write test summary
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          reports = sorted((Path(os.environ['RUNNER_TEMP']) / 'test-results').glob('*.trx'))
+          if reports:
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+                  print('## JPOGStegosaurus test report\n', file=summary)
+                  print('| Run | Passed | Failed | Skipped | Total |', file=summary)
+                  print('| --- | ---: | ---: | ---: | ---: |', file=summary)
+                  for report in reports:
+                      counters = ET.parse(report).find('.//{*}Counters').attrib
+                      print(f"| {report.stem} | {counters['passed']} | {counters['failed']} | "
+                            f"{counters['notExecuted']} | {counters['total']} |", file=summary)
+          PY
+      - name: Upload test reports
+        if: ${{ !cancelled() && hashFiles('Tests~/*/*.csproj') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: JPOGStegosaurus-test-reports
+          path: ${{ runner.temp }}/test-results/*.trx
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore local tools
+        working-directory: Plugin~
+        run: dotnet tool restore
+      # CI=true references the game through the LethalCompany.GameLibs.Steam package instead of a local install.
+      - name: Build plugin (Debug)
+        run: dotnet build 'Plugin~/JPOGStegosaurus.csproj' -c Debug -p:CI=true
+      # A Release build also packs the Thunderstore ZIP from the DLL and the committed bundles.
+      - name: Build plugin and package (Release)
+        run: dotnet build 'Plugin~/JPOGStegosaurus.csproj' -c Release -p:CI=true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JPOGStegosaurus-debug
+          path: Plugin~/bin/Debug/netstandard2.1/JPOGStegosaurus.dll
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JPOGStegosaurus-package
+          path: Plugin~/Thunderstore/Packages/*.zip
+          if-no-files-found: error
