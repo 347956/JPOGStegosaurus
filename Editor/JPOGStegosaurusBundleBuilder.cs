@@ -25,8 +25,14 @@ namespace JPOGBuild
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .FirstOrDefault(p => Path.GetFileNameWithoutExtension(p) == ModInformation);
             if (infoPath == null) throw new Exception("[JPOGStegosaurus] " + ModInformation + ".asset not found");
-            string outDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(infoPath), "AssetBundles"));
+            string root = Path.GetDirectoryName(infoPath).Replace('\\', '/');
+            string outDir = Path.GetFullPath(Path.Combine(root, "AssetBundles"));
             Directory.CreateDirectory(outDir);
+
+            // Reimport the content first: a prefab imported while the plugin DLL was missing keeps an import
+            // without its script data, and the bundle would ship the AI with every field at its default.
+            AssetDatabase.ImportAsset(root + "/Content", ImportAssetOptions.ForceUpdate | ImportAssetOptions.ImportRecursive);
+            ValidateEnemyPrefabs(root + "/Content");
 
             var builds = Bundles.Select(bundle =>
             {
@@ -47,6 +53,33 @@ namespace JPOGBuild
             foreach (string bundle in Bundles)
                 Debug.Log("[JPOGStegosaurus] Built " + bundle + ": " + new FileInfo(Path.Combine(outDir, bundle)).Length + " bytes");
             Debug.Log("[JPOGStegosaurus] Bundles written to " + outDir + ". Run dotnet build in Plugin~ to deploy them.");
+        }
+            /// <summary>
+        /// Fails the build when an enemy prefab's AI component (the MonoBehaviour with an enemyType field)
+        /// has no script or no enemyType. LethalLevelLoader rejects such an enemy and its error breaks
+        /// StartOfRound.Awake, so a new save throws errors everywhere.
+        /// </summary>
+        static void ValidateEnemyPrefabs(string contentFolder)
+        {
+            int checkedCount = 0;
+            foreach (string guid in AssetDatabase.FindAssets("t:Prefab", new[] { contentFolder }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                foreach (var behaviour in prefab.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (behaviour == null)
+                        throw new Exception("[JPOGStegosaurus] " + path + " has a missing script. Build the plugin DLL first.");
+                    var enemyType = new SerializedObject(behaviour).FindProperty("enemyType");
+                    if (enemyType == null || enemyType.propertyType != SerializedPropertyType.ObjectReference) continue;
+                    if (behaviour.GetType().Name == "EnemyAICollisionDetect") continue;
+                    if (enemyType.objectReferenceValue == null)
+                        throw new Exception("[JPOGStegosaurus] " + path + ": " + behaviour.GetType().Name + ".enemyType is empty");
+                    checkedCount++;
+                }
+            }
+            if (checkedCount == 0) throw new Exception("[JPOGStegosaurus] No enemy AI component found under " + contentFolder);
+            Debug.Log("[JPOGStegosaurus] Enemy prefab check passed (" + checkedCount + " AI component(s) with enemyType set)");
         }
     }
 }
