@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -303672662, guid: 9708d15d6a8ee4845ace9be3a2bd936a, type: 3}
+  m_Name: JPOGStegosaurusModInformation
+  m_EditorClassIdentifier: 
+  <AuthorName>k__BackingField: 347956
+  <ModName>k__BackingField: JPOGStegosaurus
+  <Version>k__BackingField: 1.0.6
+  <READMEFile>k__BackingField: {fileID: 4900000, guid: 7f1c60504570f9542b88b029b9b1b640, type: 3}
+  <ChangelogFile>k__BackingField: {fileID: 4900000, guid: 3f5dc4d001b633a4c89b7aa91a271b88, type: 3}
+  <ModDescription>k__BackingField: JPOGStegosaurus for Lethal Company
+  <ExtraDependencies>k__BackingField: []
+  <WebsiteUrl>k__BackingField: https://github.com/347956/JPOGStegosaurus
+  <ModIcon>k__BackingField: {fileID: 21300000, guid: f3376b5cb44c0414398f22533cea9bfb, type: 3}
