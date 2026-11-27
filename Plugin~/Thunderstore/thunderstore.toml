@@ -21,9 +21,14 @@ outdir = "./Packages"
 source = "../bin/Release/netstandard2.1/JPOGStegosaurus.dll"
 target = "plugins/JPOGStegosaurus/"
 
+# The Dusk export from the Unity project: the .duskmod next to the DLL, the content bundle in an Assets/ subfolder (Dusk only loads it from there).
+[[build.copy]]
+source = "../../AssetBundles/jpogstegosaurusmainassets.duskmod"
+target = "plugins/JPOGStegosaurus/"
+
 [[build.copy]]
 source = "../../AssetBundles/jpogstegosaurusassets"
-target = "plugins/JPOGStegosaurus/"
+target = "plugins/JPOGStegosaurus/Assets/"
 
 [[build.copy]]
 source = "../../Package/CHANGELOG.md"
