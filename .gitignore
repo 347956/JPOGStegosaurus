@@ -1,0 +1,14 @@
+# Blender backups
+*.blend1
+*.blend1.meta
+*.blend[0-9]
+*.blend[0-9].meta
+
+# Build output copied here by the plugin build (Plugin~/JPOGStegosaurus.csproj.user) and the Dusk export.
+# Keep the .meta files: prefabs reference the plugin DLL by the GUID in its .meta.
+/AssetBundles/*
+!/AssetBundles/jpogstegosaurusmainassets.duskmod
+!/AssetBundles/jpogstegosaurusassets
+!/AssetBundles/*.meta
+# Unity creates these for the build manifests; nothing references them.
+/AssetBundles/*.manifest.meta
