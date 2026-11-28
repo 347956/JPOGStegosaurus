@@ -1,6 +1,7 @@
 name: GitHub release
 
-# Publishes a GitHub Release with the Thunderstore ZIP (it does not upload to Thunderstore).
+# Publishes a GitHub Release with the Thunderstore ZIP. Uploading that ZIP to Thunderstore is a separate,
+# manual step: run the "Thunderstore publish" workflow with the tag after testing the release.
 # - Push to main: releases the version in Plugin~/JPOGStegosaurus.csproj when its tag v<version> doesn't exist yet,
 #   then creates that tag. Bump <Version> (and the Unity mod information) to release again.
 # - Push a v* tag, or run it by hand with an existing tag: builds and releases that tag.
@@ -128,6 +129,8 @@ jobs:
               manifest = json.loads(read('manifest.json'))
               if manifest['version_number'] != version:
                   raise SystemExit('Package manifest version does not match the release')
+              if not any(d.startswith('TeamXiaolan-DawnLib-') for d in manifest.get('dependencies', [])):
+                  raise SystemExit('Package does not depend on DawnLib; check [package.dependencies] in thunderstore.toml')
               for name, source in {
                   'plugins/JPOGStegosaurus/JPOGStegosaurus.dll': 'Plugin~/bin/Release/netstandard2.1/JPOGStegosaurus.dll',
                   'plugins/JPOGStegosaurus/jpogstegosaurusmainassets.duskmod': 'AssetBundles/jpogstegosaurusmainassets.duskmod',

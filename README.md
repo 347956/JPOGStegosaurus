@@ -47,6 +47,7 @@ This repository is a folder that goes inside the `Assets/` folder of a Lethal Co
 
 - **Build and test** (`.github/workflows/build.yml`) runs on every push and pull request to `main`. It runs the xUnit projects in `Tests~/` (Debug and Release), builds the plugin with `CI=true`, which takes the game assemblies from the `LethalCompany.GameLibs.Steam` NuGet package, and packs the Thunderstore ZIP. The ZIP and the Debug DLL are uploaded as run artifacts.
 - **GitHub release** (`.github/workflows/release.yml`) runs on every push to `main`. If the tag `v<Version>` for the `<Version>` in `Plugin~/JPOGStegosaurus.csproj` doesn't exist yet, it tests, builds and checks the package, then creates the tag and a GitHub Release with the ZIP attached. It doesn't upload to Thunderstore.
+- **Thunderstore publish** (`.github/workflows/thunderstore.yml`) runs only by hand (Actions > Thunderstore publish > Run workflow, with a tag such as `v1.2.0`). It downloads the ZIP from that GitHub Release, checks it, and uploads it with tcli using the `TCLI_AUTH_TOKEN_JPOGSTEGOSAURUS` secret. It skips versions already on Thunderstore. Test the GitHub Release ZIP in game before running it.
 
   To release, raise `<Version>` in the csproj and the version in `JPOGStegosaurusModInformation.asset` together, add a `## <version>` entry to `Package/CHANGELOG.md`, and rebuild and commit the bundles. The workflow stops if any of these is missing. You can also push a `v<version>` tag, or run the workflow by hand with an existing tag to retry.
 
@@ -56,7 +57,7 @@ CI builds can't build the Unity bundles. They package the bundles committed in `
 
 ### Thunderstore Packages
 
-We have configured [JPOGStegosaurus.csproj](/Plugin~/JPOGStegosaurus.csproj) to build a Thunderstore package to [/Plugin~/Thunderstore/Packages/](/Plugin~/Thunderstore/Packages/) using [tcli](https://github.com/thunderstore-io/thunderstore-cli/wiki) each time we make a release build of our mod. A release build can be done for example from the command-line like this: `dotnet build -c release`. This will use configuration options from [thunderstore.toml](/Plugin~/Thunderstore/thunderstore.toml), so configure it for your own mod! Do note that we have not included a way to upload your mod to thunderstore via tcli in this project.
+We have configured [JPOGStegosaurus.csproj](/Plugin~/JPOGStegosaurus.csproj) to build a Thunderstore package to [/Plugin~/Thunderstore/Packages/](/Plugin~/Thunderstore/Packages/) using [tcli](https://github.com/thunderstore-io/thunderstore-cli/wiki) each time we make a release build of our mod. A release build can be done for example from the command-line like this: `dotnet build -c release`. This will use configuration options from [thunderstore.toml](/Plugin~/Thunderstore/thunderstore.toml), so configure it for your own mod! Uploads go through the **Thunderstore publish** workflow above. Keep `[package.dependencies]` in line with what the mod needs at runtime (DawnLib).
 
 ### Renaming The Mod
 
