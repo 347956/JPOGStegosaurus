@@ -14,10 +14,12 @@ This repository is a folder that goes inside the `Assets/` folder of a Lethal Co
 | `Content/JPOGStegosaurus/` | The enemy: prefab, model, animations, materials, audio, bestiary entries and Dusk registry assets. |
 | `JPOGStegosaurusContentContainer.asset`, `JPOGStegosaurusModInformation.asset` | The Dusk content container and mod information for the Dusk export. |
 | `Package/` | README, changelog and icon of the Thunderstore package (referenced by the mod information). |
-| `AssetBundles/` | Build output: the plugin DLL and the exported bundles. Only the `.meta` files are committed; the prefab references the DLL by the GUID in its `.meta`. |
+| `AssetBundles/` | Build output. The Dusk bundles are committed. The prefab references the locally built DLL by the GUID in its tracked `.meta`. |
 | `Editor/` | The Unity editor script that builds this mod's bundles (menu JPOG > Build JPOGStegosaurus bundles). |
 | `Plugin~/` | The C# plugin. The `~` is on purpose: Unity ignores folders ending in `~`, so it doesn't try to compile the BepInEx code. |
-| `AssetSources~/` | Source files (Blender) that Unity shouldn't import. |
+| `AssetSources~/` | Blender sources and 30 fps armature-only FBX takes. Unity ignores this directory. |
+
+The runtime model and standalone clips are under `Content/JPOGStegosaurus/`. To regenerate the rest model and source takes, run `blender --background --python AssetSources~/Blender/export_fbx.py -- /path/to/output` with Blender 4.1. The standalone Unity clips carry the gameplay timing and audio events. The bundle builder includes them as dependencies of the Animator controller.
 
 ## Building 🔨
 

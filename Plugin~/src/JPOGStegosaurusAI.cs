@@ -57,6 +57,15 @@ namespace JPOGStegosaurus {
         private bool inStunAnimation;
         private int handledStateIndex = -1;
 
+        // Planar speed, signed turn, and traversal suspension from the navigation owner.
+        private readonly NetworkVariable<Vector3> locomotionSample = new(
+            Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        private StegoLocomotion locomotion = null!;
+        private StegoFootIk? feet;
+        private float lastYaw;
+        private float nextLocomotionSync;
+        private Vector3 visualMovement;
+
         internal bool IsStunned => stunNormalizedTimer > 0f;
 
         ThreatType IVisibleThreat.type => ThreatType.EyelessDog;
@@ -131,6 +140,9 @@ namespace JPOGStegosaurus {
         public override void Start() {
             CreateHelpers();
             base.Start();
+            locomotion = new StegoLocomotion(creatureAnimator);
+            feet = StegoFootIk.Create(creatureAnimator);
+            lastYaw = transform.eulerAngles.y;
             LogIfDebugBuild("JPOGStegosaurus Spawned");
             enemyRandom = new System.Random(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
             if (IsOwner)
@@ -156,9 +168,11 @@ namespace JPOGStegosaurus {
         }
 
         public override void Update() {
+            feet?.RestoreAnimatedPose();
             base.Update();
             if (isEnemyDead)
             {
+                locomotion.SuspendTurns();
                 // KillEnemy plays the death sound, but we also want the enemy to stop making any other sound.
                 if (!isDeadAnimationDone)
                 {
@@ -175,6 +189,56 @@ namespace JPOGStegosaurus {
             {
                 Movement.Update();
             }
+            UpdateLocomotion();
+        }
+
+        private bool BlocksLocomotion => !ventAnimationFinished || isEnemyDead || IsStunned || inSpecialAnimation ||
+            currentBehaviourStateIndex == (int)StegoState.Stunned ||
+            currentBehaviourStateIndex == (int)StegoState.SpecialAttack || Attacks.IsAttacking;
+
+        private void UpdateLocomotion()
+        {
+            float yaw = transform.eulerAngles.y;
+            visualMovement = locomotionSample.Value;
+            if (IsOwner)
+            {
+                bool traversing = !agent.enabled || !agent.isOnNavMesh || agent.isOnOffMeshLink;
+                Vector3 velocity = traversing ? Vector3.zero : agent.velocity;
+                float speed = new Vector2(velocity.x, velocity.z).magnitude;
+                float turn = !traversing && !BlocksLocomotion
+                    ? StegoLocomotion.MeasureTurn(Mathf.DeltaAngle(lastYaw, yaw), Time.deltaTime) : 0f;
+                visualMovement = new Vector3(speed, turn, traversing ? 1f : 0f);
+                Vector3 sample = new(Mathf.Round(speed * 10f) / 10f, Mathf.Round(turn * 16f) / 16f, visualMovement.z);
+                Vector3 previous = locomotionSample.Value;
+                if (IsSpawned && sample != previous && (sample.z != previous.z || Time.time >= nextLocomotionSync))
+                {
+                    locomotionSample.Value = sample;
+                    nextLocomotionSync = Time.time + 0.1f;
+                }
+            }
+            lastYaw = yaw;
+            locomotion.UpdateTurns(visualMovement.y, visualMovement.x, BlocksLocomotion || visualMovement.z != 0f, Time.deltaTime);
+        }
+
+        private void LateUpdate()
+        {
+            if (feet == null)
+                return;
+
+            if (BlocksLocomotion || visualMovement.z != 0f || !locomotion.TryGetGait(out var state))
+            {
+                feet.Reset();
+                return;
+            }
+
+            float turn = Mathf.Max(Mathf.Abs(visualMovement.y), Mathf.Abs(locomotion.SignedTurn));
+            feet.Apply(state.normalizedTime, StegoLocomotion.IsRunning(state), StegoLocomotion.IsStanding(state),
+                turn, Time.deltaTime);
+        }
+
+        private void OnDisable()
+        {
+            feet?.Reset();
         }
 
         public override void DoAIInterval() {
@@ -456,6 +520,9 @@ namespace JPOGStegosaurus {
         [ClientRpc]
         public void DoAnimationClientRpc(string animationName) {
             LogIfDebugBuild($"Animation: {animationName}");
+            if (animationName is "tailAttack" or "tailFrontalAttack" or "tailShow" or "tailWarning"
+                or "stompAttack" or "stunEnemy" or "scratch" or "stretch")
+                locomotion?.SuspendTurns();
             creatureAnimator.SetTrigger(animationName);
         }
 
