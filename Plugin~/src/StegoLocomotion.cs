@@ -4,6 +4,8 @@ namespace JPOGStegosaurus
 {
     internal sealed class StegoLocomotion
     {
+        private const float TurnBlendTime = 0.12f;
+
         private static readonly int Idle = Animator.StringToHash("IdleWalking");
         private static readonly int Walk = Animator.StringToHash("WalkingAnimation");
         private static readonly int Run = Animator.StringToHash("RunningAnimation");
@@ -45,13 +47,17 @@ namespace JPOGStegosaurus
         public bool TryGetGait(out AnimatorStateInfo state)
         {
             state = default;
-            if (!animator.isActiveAndEnabled || gait < 0 || animator.IsInTransition(gait)
-                || LayerOwnsPose(body, BodyIdle) || LayerOwnsPose(tail, TailIdle) || LayerOwnsPose(head, HeadIdle))
+            if (!CanReadGait() || animator.IsInTransition(gait))
                 return false;
 
             state = animator.GetCurrentAnimatorStateInfo(gait);
             return state.shortNameHash == Walk || state.shortNameHash == Run || state.shortNameHash == Idle;
         }
+
+        private bool CanReadGait() => animator.isActiveAndEnabled && gait >= 0 &&
+            !LayerOwnsPose(body, BodyIdle) && !LayerOwnsPose(tail, TailIdle) && !LayerOwnsPose(head, HeadIdle);
+
+        private static bool IsMoving(AnimatorStateInfo state) => state.shortNameHash == Walk || state.shortNameHash == Run;
 
         public static bool IsRunning(AnimatorStateInfo state) => state.shortNameHash == Run;
         public static bool IsStanding(AnimatorStateInfo state) => state.shortNameHash == Idle;
@@ -70,17 +76,27 @@ namespace JPOGStegosaurus
             if (turns < 0 || !animator.isActiveAndEnabled)
                 return;
 
-            if (suspended || !TryGetGait(out var state) || IsStanding(state))
+            if (suspended || !CanReadGait())
             {
                 SuspendTurns();
                 return;
             }
 
+            // Follow the outgoing stride through a crossfade. From idle, use the incoming stride.
+            var state = animator.GetCurrentAnimatorStateInfo(gait);
+            if (!IsMoving(state) && animator.IsInTransition(gait))
+                state = animator.GetNextAnimatorStateInfo(gait);
+
+            bool moving = IsMoving(state);
             float response = 1f - Mathf.Exp(-13f * deltaTime);
-            SignedTurn = Mathf.Lerp(SignedTurn, turn, response);
+            SignedTurn = Mathf.Lerp(SignedTurn, moving ? turn : 0f, response);
             animator.SetFloat(TurnAmount, SignedTurn);
-            animator.SetFloat(TurnSpeed, speed, 0.12f, deltaTime);
-            animator.SetLayerWeight(turns, Mathf.InverseLerp(0.15f, 0.8f, speed));
+            animator.SetFloat(TurnSpeed, speed, TurnBlendTime, deltaTime);
+            float weight = moving ? Mathf.InverseLerp(0.15f, 0.8f, speed) : 0f;
+            animator.SetLayerWeight(turns, Mathf.MoveTowards(animator.GetLayerWeight(turns), weight, deltaTime / TurnBlendTime));
+
+            if (!moving)
+                return;
 
             // The local pose layer has a stationary clock. Advance it to the exact same normalized
             // time as the walking layer will reach on this evaluation, including its playback rate.
