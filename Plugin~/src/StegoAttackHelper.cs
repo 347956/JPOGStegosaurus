@@ -138,8 +138,7 @@ namespace JPOGStegosaurus
             }
             if (type == StegoAttackType.SpecialTail)
             {
-                // The special attack animation leaves the Stegosaurus turned around
-                stegoAI.transform.rotation = Quaternion.Euler(0, 0, 0);
+                // The return is authored on the rig. Navigation still owns the world heading.
                 SpecialAttackFinished = true;
             }
             IsAttacking = false;
