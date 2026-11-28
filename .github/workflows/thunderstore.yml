@@ -1,0 +1,95 @@
+name: Thunderstore publish
+
+# Manual: uploads the ZIP of an existing GitHub Release (the one that was tested in game) to Thunderstore.
+# It never builds a new package, so Thunderstore gets exactly the file that is on the GitHub Release.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'GitHub Release tag to publish (e.g. v1.0.8)'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: thunderstore-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      # The workflow's own revision (main), not the tag: only thunderstore.toml (communities, categories) and the tcli tool come
+      # from the checkout, and they must be current also when an older release is uploaded again. The package itself is the release ZIP.
+      - uses: actions/checkout@v4
+      - name: Download the GitHub Release package
+        id: package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag must look like v1.2.3, got '$TAG'"
+            exit 1
+          fi
+          version="${TAG#v}"
+          package="347956-JPOGStegosaurus-$version.zip"
+          mkdir -p dist
+          gh release download "$TAG" --pattern "$package" --dir dist
+          python3 - "dist/$package" "$version" <<'PY'
+          import json, sys, zipfile
+          path, version = sys.argv[1:]
+          with zipfile.ZipFile(path) as archive:
+              names = {name.lstrip('/') for name in archive.namelist()}
+              entry = next((n for n in archive.namelist() if n.lstrip('/') == 'manifest.json'), None)
+              if entry is None:
+                  raise SystemExit('Package is missing manifest.json')
+              manifest = json.loads(archive.read(entry))
+          if manifest.get('name') != 'JPOGStegosaurus' or manifest.get('version_number') != version:
+              raise SystemExit(f"Package manifest is {manifest.get('name')} {manifest.get('version_number')}, expected JPOGStegosaurus {version}")
+          dependencies = manifest.get('dependencies', [])
+          if not any(d.startswith('TeamXiaolan-DawnLib-') for d in dependencies):
+              raise SystemExit(f'Package does not depend on DawnLib: {dependencies}')
+          for name in ('plugins/JPOGStegosaurus/JPOGStegosaurus.dll', 'plugins/JPOGStegosaurus/jpogstegosaurusmainassets.duskmod',
+                       'plugins/JPOGStegosaurus/Assets/jpogstegosaurusassets', 'README.md', 'CHANGELOG.md', 'icon.png'):
+              if name not in names:
+                  raise SystemExit(f'Package is missing {name}')
+          PY
+          sha256sum "dist/$package"
+          status=$(curl -s -o /dev/null -w '%{http_code}' "https://thunderstore.io/api/experimental/package/347956/JPOGStegosaurus/$version/")
+          case "$status" in
+            200) echo "published=true" >> "$GITHUB_OUTPUT"
+                 echo "::notice::JPOGStegosaurus $version is already on Thunderstore; skipping the upload." ;;
+            404) echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *)   echo "::error::Could not check Thunderstore (HTTP $status)"; exit 1 ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "file=dist/$package" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-dotnet@v4
+        if: steps.package.outputs.published == 'false'
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish to Thunderstore
+        if: steps.package.outputs.published == 'false'
+        env:
+          TCLI_AUTH_TOKEN: ${{ secrets.TCLI_AUTH_TOKEN_JPOGSTEGOSAURUS }}
+          PACKAGE_FILE: ${{ steps.package.outputs.file }}
+          VERSION: ${{ steps.package.outputs.version }}
+        shell: bash
+        run: |
+          if [ -z "$TCLI_AUTH_TOKEN" ]; then
+            echo "::error::The TCLI_AUTH_TOKEN_JPOGSTEGOSAURUS secret is not set"
+            exit 1
+          fi
+          root="$PWD"
+          cd 'Plugin~'
+          dotnet tool restore
+          dotnet tcli publish \
+            --file "$root/$PACKAGE_FILE" \
+            --config-path "$root/Plugin~/Thunderstore/thunderstore.toml" \
+            --token "$TCLI_AUTH_TOKEN"
+          echo "### Published JPOGStegosaurus $VERSION to Thunderstore" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://thunderstore.io/c/lethal-company/p/347956/JPOGStegosaurus/" >> "$GITHUB_STEP_SUMMARY"
