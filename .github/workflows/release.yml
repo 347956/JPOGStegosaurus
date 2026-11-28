@@ -152,9 +152,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
-            echo "Release $RELEASE_TAG already exists; leaving it unchanged."
+          package="Plugin~/Thunderstore/Packages/347956-JPOGStegosaurus-$RELEASE_VERSION.zip"
+          if draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft 2> /dev/null); then
+            if [ "$draft" != "true" ]; then
+              echo "Release $RELEASE_TAG is already published; leaving it unchanged."
+              exit 0
+            fi
+            # An earlier run failed after creating the draft: finish the upload and publish it.
+            echo "Finishing draft release $RELEASE_TAG."
+            gh release upload "$RELEASE_TAG" "$package" --clobber
+            gh release edit "$RELEASE_TAG" --draft=false
             exit 0
           fi
-          package="Plugin~/Thunderstore/Packages/347956-JPOGStegosaurus-$RELEASE_VERSION.zip"
           gh release create "$RELEASE_TAG" "$package" --title "JPOGStegosaurus $RELEASE_TAG" --generate-notes --verify-tag
