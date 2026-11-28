@@ -61,6 +61,7 @@ namespace JPOGStegosaurus {
         private readonly NetworkVariable<Vector3> locomotionSample = new(
             Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         private StegoLocomotion locomotion = null!;
+        private StegoFootIk? feet;
         private float lastYaw;
         private float nextLocomotionSync;
         private Vector3 visualMovement;
@@ -140,6 +141,7 @@ namespace JPOGStegosaurus {
             CreateHelpers();
             base.Start();
             locomotion = new StegoLocomotion(creatureAnimator);
+            feet = StegoFootIk.Create(creatureAnimator);
             lastYaw = transform.eulerAngles.y;
             LogIfDebugBuild("JPOGStegosaurus Spawned");
             enemyRandom = new System.Random(StartOfRound.Instance.randomMapSeed + thisEnemyIndex);
@@ -166,6 +168,7 @@ namespace JPOGStegosaurus {
         }
 
         public override void Update() {
+            feet?.RestoreAnimatedPose();
             base.Update();
             if (isEnemyDead)
             {
@@ -202,7 +205,7 @@ namespace JPOGStegosaurus {
                 bool traversing = !agent.enabled || !agent.isOnNavMesh || agent.isOnOffMeshLink;
                 Vector3 velocity = traversing ? Vector3.zero : agent.velocity;
                 float speed = new Vector2(velocity.x, velocity.z).magnitude;
-                float turn = speed > 0.15f && !BlocksLocomotion
+                float turn = !traversing && !BlocksLocomotion
                     ? StegoLocomotion.MeasureTurn(Mathf.DeltaAngle(lastYaw, yaw), Time.deltaTime) : 0f;
                 visualMovement = new Vector3(speed, turn, traversing ? 1f : 0f);
                 Vector3 sample = new(Mathf.Round(speed * 10f) / 10f, Mathf.Round(turn * 16f) / 16f, visualMovement.z);
@@ -215,6 +218,27 @@ namespace JPOGStegosaurus {
             }
             lastYaw = yaw;
             locomotion.UpdateTurns(visualMovement.y, visualMovement.x, BlocksLocomotion || visualMovement.z != 0f, Time.deltaTime);
+        }
+
+        private void LateUpdate()
+        {
+            if (feet == null)
+                return;
+
+            if (BlocksLocomotion || visualMovement.z != 0f || !locomotion.TryGetGait(out var state))
+            {
+                feet.Reset();
+                return;
+            }
+
+            float turn = Mathf.Max(Mathf.Abs(visualMovement.y), Mathf.Abs(locomotion.SignedTurn));
+            feet.Apply(state.normalizedTime, StegoLocomotion.IsRunning(state), StegoLocomotion.IsStanding(state),
+                turn, Time.deltaTime);
+        }
+
+        private void OnDisable()
+        {
+            feet?.Reset();
         }
 
         public override void DoAIInterval() {
